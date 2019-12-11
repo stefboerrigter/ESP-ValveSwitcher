@@ -41,7 +41,8 @@ class DS18 {
     char *  getDeviceString(char * s, unsigned char index);
     double  getValue(unsigned char index);
     int16_t getRawValue(unsigned char index); // raw values, needs / 16
-
+ //variables:
+    uint8_t numberOfSensors;
   protected:
     bool          validateID(unsigned char id);
     unsigned char chip(unsigned char index);

@@ -10,12 +10,27 @@
 #define WIFI_SSID "FamBoerrigter"
 #define WIFI_PWD  "BoerrigterGijsbers147"
 
-DS18 ds18;
+//DS18 temperature sensor config
+#define DS18_GPIO     D5 //default pin
+#define DS18_PARASITE false //default not parasite
+
+
+typedef struct {
+    uint32_t timestamp;      // for internal timings, via millis()
+    uint8_t  ds18Sensors;    // count of dallas sensors
+    DS18 ds18;               //ds18 object
+} Admin;
+
+//Local administration object of struct
+Admin m_admin;
 
 void setup() {
-
+    m_admin.ds18Sensors = m_admin.ds18.setup(DS18_GPIO, DS18_PARASITE); // returns #sensors
 }
 
 void loop() {
-
+    /* Process sensors if any */
+    if (m_admin.ds18Sensors) {
+        m_admin.ds18.loop();
+    }
 }

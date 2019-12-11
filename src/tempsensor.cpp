@@ -44,7 +44,6 @@ uint8_t DS18::setup(uint8_t gpio, bool parasite) {
     }
 
     _count = count;
-
     return count;
 }
 
