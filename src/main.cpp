@@ -8,15 +8,10 @@
 #include "tempsensor.h"
 #include "MyESP.h"
 #include "utils.h"
+#include "version.h"
 
 #define WIFI_SSID "FamBoerrigter"
 #define WIFI_PWD  "BoerrigterGijsbers147"
-
-#define APP_NAME "ESP-VALVE"
-#define APP_HOSTNAME "esp-valve"
-#define APP_URL "https://https://github.com/stefboerrigter/ESP-ValveSwitcher"
-#define APP_UPDATEURL "https://api.github.com/repos/stefboerrigter/ESP-ValveSwitcher/releases/latest"
-#define APP_VERSION "0.0.1" //TODO
 
 //DS18 temperature sensor config
 #define DS18_GPIO     D5 //default pin
@@ -65,7 +60,7 @@ void setup() {
 }
 
 void loop() {
-    m_admin.myESP.loop();
+    m_admin.myESP.loop(); //Keep WiFI, MQTT and stuf active..
     /* Process sensors if any */
     if (m_admin.ds18Sensors) {
         m_admin.ds18.loop();
@@ -292,10 +287,8 @@ void _showCommands(uint8_t event) {
 void TelnetCallback(uint8_t event) {
     if (event == TELNET_EVENT_CONNECT) {
         return;
-        //ems_setLogging(EMS_SYS_LOGGING_DEFAULT, true);
     } else if (event == TELNET_EVENT_DISCONNECT) {
         return;
-        //ems_setLogging(EMS_SYS_LOGGING_NONE, true);
     } else if ((event == TELNET_EVENT_SHOWCMD) || (event == TELNET_EVENT_SHOWSET)) {
         _showCommands(event);
     }
