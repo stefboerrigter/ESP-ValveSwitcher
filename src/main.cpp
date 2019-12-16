@@ -9,6 +9,7 @@
 #include "MyESP.h"
 #include "utils.h"
 #include "version.h"
+#include "valves.h"
 
 #define WIFI_SSID "FamBoerrigter"
 #define WIFI_PWD  "BoerrigterGijsbers147"
@@ -39,6 +40,7 @@ typedef struct {
     uint8_t  ds18Sensors;    // count of dallas sensors
     DS18 ds18;               //ds18 object
     MyESP myESP;
+    valves valve;
 //    Service service;
 } Admin;
 
@@ -57,6 +59,7 @@ void setup() {
     m_admin.myESP.begin(APP_HOSTNAME, APP_NAME, APP_VERSION, APP_URL, APP_UPDATEURL);
   //  m_admin.service.setupServices(); //Connect all required services (web / telnet / OTA / MQTT)
     m_admin.ds18Sensors = m_admin.ds18.setup(DS18_GPIO, DS18_PARASITE); // returns #sensors
+    m_admin.valve.initialize();
 }
 
 void loop() {
@@ -65,6 +68,8 @@ void loop() {
     if (m_admin.ds18Sensors) {
         m_admin.ds18.loop();
     }
+
+    m_admin.valve.Process();
 }
 
 
