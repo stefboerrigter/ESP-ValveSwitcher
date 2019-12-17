@@ -1,10 +1,10 @@
 #include "valves.h"
 #include <Wire.h>
 #include <Arduino.h>
-
+#include "utils.h"
 //https://www.best-microcontroller-projects.com/mcp23017.html
 
-#define I2C_ADDR 0
+#define I2C_ADDR 0 // -> Address 20; MCP23017 with all three address lines low.
 
 // Interrupts from the MCP will be handled by this PIN
 #define INTERRUPT_PIN D7 //GPIO13 - D7
@@ -23,7 +23,7 @@
 #include <Adafruit_MCP23017.h>
 Adafruit_MCP23017 mcp;
 
-void isr();
+void ICACHE_RAM_ATTR isr();
 
 valves::valves()
 {
@@ -66,18 +66,23 @@ void valves::initialize()
     mcp.readGPIOAB(); // Initialise for interrupts.
 
     attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN),isr,FALLING); // Enable Arduino interrupt control.
+    myDebug_P(PSTR("[Valves] Initialized"));
+       
 }
 //////////////////////////////////////////////
 void valves::Process()
 {
-    if(m_leds_enabled){
+    if(m_leds_enabled)
+    {
         mcp.digitalWrite(MCP_LEDTOG1, HIGH);
         mcp.digitalWrite(MCP_LEDTOG2, LOW);
+        delay(1000);
     }
     else
     {
         mcp.digitalWrite(MCP_LEDTOG1, LOW);
         mcp.digitalWrite(MCP_LEDTOG2, HIGH);
+        delay(1000);
     }
     m_leds_enabled = !m_leds_enabled;
 }
@@ -119,6 +124,8 @@ void isr()
 
         ledState = ! ledState;
     }
-
+    else{
+        myDebug("[Valves] Interrupt %d", p);
+    }
     attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN),isr,FALLING); // Reinstate interrupts from external pin.
 }

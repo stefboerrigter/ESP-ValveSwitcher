@@ -11,9 +11,6 @@
 #include "version.h"
 #include "valves.h"
 
-#define WIFI_SSID "FamBoerrigter"
-#define WIFI_PWD  "BoerrigterGijsbers147"
-
 //DS18 temperature sensor config
 #define DS18_GPIO     D5 //default pin
 #define DS18_PARASITE false //default not parasite

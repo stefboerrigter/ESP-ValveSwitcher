@@ -230,15 +230,6 @@ void MyESP::_wifiCallback(justwifi_messages_t code, char * parameter) {
         // MQTT Setup
         _mqtt_setup();
 
-        // if we don't want Serial anymore, turn it off
-        if (!_general_serial) {
-            myDebug_P(PSTR("[SYSTEM] Disabling serial port communication"));
-            SerialAndTelnet.flush(); // flush so all buffer is printed to serial
-            setUseSerial(false);
-        } else {
-            myDebug_P(PSTR("[SYSTEM] Serial port communication is enabled"));
-        }
-
         // NTP now that we have a WiFi connection
         if (_ntp_enabled) {
             NTP.Ntp(_ntp_server, _ntp_interval); // set up NTP server
@@ -258,15 +249,6 @@ void MyESP::_wifiCallback(justwifi_messages_t code, char * parameter) {
         myDebug_P(PSTR("[WIFI] SSID  %s"), jw.getAPSSID().c_str());
         myDebug_P(PSTR("[WIFI] IP    %s"), WiFi.softAPIP().toString().c_str());
         myDebug_P(PSTR("[WIFI] MAC   %s"), WiFi.softAPmacAddress().c_str());
-
-        // if we don't want Serial anymore, turn it off
-        if (!_general_serial) {
-            myDebug_P(PSTR("[SYSTEM] Disabling serial port communication"));
-            SerialAndTelnet.flush(); // flush so all buffer is printed to serial
-            setUseSerial(false);
-        } else {
-            myDebug_P(PSTR("[SYSTEM] Serial port communication is enabled"));
-        }
 
         _wifi_connected = true;
 
@@ -1703,7 +1685,7 @@ bool MyESP::_fs_loadConfig() {
     _network_ssid      = strdup(network["ssid"] | "");
     _network_password  = strdup(network["password"] | "");
     _network_wmode     = network["wmode"]; // 0 is client, 1 is AP
-
+    
     JsonObject general = doc["general"];
     _general_hostname   = strdup(general["hostname"]);
     _general_log_events = general["log_events"];
