@@ -7,7 +7,8 @@
 #define I2C_ADDR 0
 
 // Interrupts from the MCP will be handled by this PIN
-#define INTERRUPT_PIN 3
+#define INTERRUPT_PIN D7 //GPIO13 - D7
+//I2C -> D4 & D5?
 
 // MCP23017 setup
 #define MCP_LED1 7
@@ -26,7 +27,7 @@ void isr();
 
 valves::valves()
 {
-
+    m_leds_enabled = false;
 }
 
 valves::~valves()
@@ -38,7 +39,7 @@ valves::~valves()
 void valves::initialize()
 {
     pinMode(INTERRUPT_PIN,INPUT); //pin 3?
-    mcp.begin(I2C_ADDR);
+    mcp.begin(I2C_ADDR, 4, 5); //PIN4 & 4 is SD
 
     mcp.pinMode(MCP_LEDTOG1, OUTPUT);  // Toggle LED 1
     mcp.pinMode(MCP_LEDTOG2, OUTPUT);  // Toggle LED 2
@@ -67,18 +68,18 @@ void valves::initialize()
     attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN),isr,FALLING); // Enable Arduino interrupt control.
 }
 //////////////////////////////////////////////
-void valves::Process(){
-  
-  delay(300);
-
-  mcp.digitalWrite(MCP_LEDTOG1, HIGH);
-  mcp.digitalWrite(MCP_LEDTOG2, LOW);
- 
-  delay(300);
-
-  mcp.digitalWrite(MCP_LEDTOG1, LOW);
-  mcp.digitalWrite(MCP_LEDTOG2, HIGH);
-  
+void valves::Process()
+{
+    if(m_leds_enabled){
+        mcp.digitalWrite(MCP_LEDTOG1, HIGH);
+        mcp.digitalWrite(MCP_LEDTOG2, LOW);
+    }
+    else
+    {
+        mcp.digitalWrite(MCP_LEDTOG1, LOW);
+        mcp.digitalWrite(MCP_LEDTOG2, HIGH);
+    }
+    m_leds_enabled = !m_leds_enabled;
 }
 
 
