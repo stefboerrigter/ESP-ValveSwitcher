@@ -325,7 +325,7 @@ void MyESP::_mqttOnMessage(char * topic, char * payload, size_t len) {
     char message[len + 1];
     strlcpy(message, (char *)payload, len + 1);
 
-    // myDebug_P(PSTR("[MQTT] Received %s => %s"), topic, message); // enable for debugging
+    myDebug_P(PSTR("[MQTT] Received %s => %s"), topic, message); // enable for debugging
 
     // topics are in format MQTT_BASE/HOSTNAME/TOPIC
     char * topic_magnitude = strrchr(topic, '/'); // strip out everything until last /

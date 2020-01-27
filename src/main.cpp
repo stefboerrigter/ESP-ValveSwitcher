@@ -9,11 +9,13 @@
 #include "MyESP.h"
 #include "utils.h"
 #include "version.h"
-#include "valves.h"
+#include "valveManager.h"
 
 //DS18 temperature sensor config
 #define DS18_GPIO     D5 //default pin
 #define DS18_PARASITE false //default not parasite
+
+#define TOPIC_VALVE_MAIN "valves"
 
 //// Function definitions:
 bool LoadSaveCallback(MYESP_FSACTION action, JsonObject settings);
@@ -37,10 +39,8 @@ typedef struct {
     uint8_t  ds18Sensors;    // count of dallas sensors
     DS18 ds18;               //ds18 object
     MyESP myESP;
-    valves valve;
-//    Service service;
+    ValveManager valveManager;
 } Admin;
-
 
 //Local administration object of struct
 Admin m_admin;
@@ -56,7 +56,7 @@ void setup() {
     m_admin.myESP.begin(APP_HOSTNAME, APP_NAME, APP_VERSION, APP_URL, APP_UPDATEURL);
   //  m_admin.service.setupServices(); //Connect all required services (web / telnet / OTA / MQTT)
     m_admin.ds18Sensors = m_admin.ds18.setup(DS18_GPIO, DS18_PARASITE); // returns #sensors
-    m_admin.valve.initialize();
+    m_admin.valveManager.initialize();
 }
 
 void loop() {
@@ -66,7 +66,7 @@ void loop() {
         m_admin.ds18.loop();
     }
 
-    m_admin.valve.Process();
+    m_admin.valveManager.Process();
 }
 
 
@@ -342,27 +342,10 @@ void MQTTCallback(unsigned int type, const char * topic, const char * message) {
             strlcat(topic_s, itoa(hc, buffer, 10), sizeof(topic_s));
             myESP.mqttSubscribe(topic_s);
         }
-
-        // generic incoming MQTT command for Thermostat
-        // this is used for example for setting daytemp, nighttemp, holidaytemp
-        myESP.mqttSubscribe(TOPIC_THERMOSTAT_CMD);
-
-        // generic incoming MQTT command for Boiler
-        // this is used for example for comfort, flowtemp
-        myESP.mqttSubscribe(TOPIC_BOILER_CMD);
-
-        // these two need to be unqiue topics
-        myESP.mqttSubscribe(TOPIC_BOILER_CMD_WWACTIVATED);
-        myESP.mqttSubscribe(TOPIC_BOILER_CMD_WWTEMP);
-
-        // generic incoming MQTT command for EMS-ESP
-        // this is used for example for shower_coldshot
-        myESP.mqttSubscribe(TOPIC_GENERIC_CMD);
-
-        // shower data
-        // for receiving shower_Timer and shower_alert switches
-        myESP.mqttSubscribe(TOPIC_SHOWER_DATA);
 #endif
+        // generic incoming MQTT command for valve ports.
+        myESP.mqttSubscribe(TOPIC_VALVE_MAIN);
+
         return;
     }
 
@@ -370,9 +353,8 @@ void MQTTCallback(unsigned int type, const char * topic, const char * message) {
     if (type != MQTT_MESSAGE_EVENT) {
         return;
     }
-#ifdef MQTT_EXAMPLES
     // check first for generic commands
-    if (strcmp(topic, TOPIC_GENERIC_CMD) == 0) {
+    if (strcmp(topic, TOPIC_VALVE_MAIN) == 0) {
         // convert JSON and get the command
         StaticJsonDocument<100> doc;
         DeserializationError    error = deserializeJson(doc, message); // Deserialize the JSON document
@@ -380,25 +362,19 @@ void MQTTCallback(unsigned int type, const char * topic, const char * message) {
             myDebug_P(PSTR("[MQTT] Invalid command from topic %s, payload %s, error %s"), topic, message, error.c_str());
             return;
         }
-        const char * command = doc["cmd"];
-
-        // Check whatever the command is and act accordingly
-        if (strcmp(command, TOPIC_SHOWER_COLDSHOT) == 0) {
-            _showerColdShotStart();
-            return;
-        }
-
+        //const char * command = doc["cmd"];
+        myDebug_P(PSTR("[MQTT] Received topic %s, payload %s"), topic, message);
+        
         return; // no match for generic commands
     }
 
     // example
     if (strcmp(topic, "BLALAT") == 0) {
-        uint8_t t = atoi((char *)message);
+        //uint8_t t = atoi((char *)message);
         //Perform Action
-        publishValues(true);
+        //publishValues(true);
         return;
     }
-#endif
 }
 
 

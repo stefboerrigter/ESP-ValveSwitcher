@@ -1,4 +1,4 @@
-#include "valves.h"
+#include "valveManager.h"
 #include <Wire.h>
 #include <Arduino.h>
 #include "utils.h"
@@ -25,18 +25,18 @@ Adafruit_MCP23017 mcp;
 
 void ICACHE_RAM_ATTR isr();
 
-valves::valves()
+ValveManager::ValveManager()
 {
     m_leds_enabled = false;
 }
 
-valves::~valves()
+ValveManager::~ValveManager()
 {
 
 }
 
 //////////////////////////////////////////////
-void valves::initialize()
+void ValveManager::initialize()
 {
     pinMode(INTERRUPT_PIN,INPUT); //pin 3?
     mcp.begin(I2C_ADDR, 4, 5); //PIN4 & 4 is SD
@@ -66,11 +66,11 @@ void valves::initialize()
     mcp.readGPIOAB(); // Initialise for interrupts.
 
     attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN),isr,FALLING); // Enable Arduino interrupt control.
-    myDebug_P(PSTR("[Valves] Initialized"));
+    myDebug_P(PSTR("[ValveMGR] Initialized"));
        
 }
 //////////////////////////////////////////////
-void valves::Process()
+void ValveManager::Process()
 {
     if(m_leds_enabled)
     {
@@ -125,7 +125,7 @@ void isr()
         ledState = ! ledState;
     }
     else{
-        myDebug("[Valves] Interrupt %d", p);
+        myDebug("[ValveMGR] Interrupt %d", p);
     }
     attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN),isr,FALLING); // Reinstate interrupts from external pin.
 }
