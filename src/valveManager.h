@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <list>
 #include <Adafruit_MCP23017.h>
+#include "valve.h"
 
 typedef enum OUTPUT_PORTS {
     SIG_OUT_OPEN_1 = 7,
@@ -33,7 +34,6 @@ typedef enum INPUT_PORTS {
 } port_input_t;
 
 class AbstractState;
-class Valve;
 
 class ValveManager {   
     friend class AbstractState;
@@ -45,6 +45,8 @@ class ValveManager {
         
         bool getLedsEnabled();
         void toggleLedsEnabled();
+        Valve * getValve(VALVE_TYPE type);
+        Valve * getValve(int interrupt_pin, int value);
 
         //semi-private... TBD
         static void ICACHE_RAM_ATTR handle_isr();

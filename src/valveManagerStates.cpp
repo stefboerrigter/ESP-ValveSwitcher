@@ -38,7 +38,6 @@ void AbstractState::setState(ValveManager &manager, AbstractState *state)
 void ValveManagerInitialize::Process(ValveManager &manager)
 {
     int pin = 0;
-    myDebug_P(PSTR("[ValveMgrIni] Process!"));
 
     pinMode(INTERRUPT_PIN,INPUT); //pin for ESP
     //Configure I2C
@@ -47,25 +46,25 @@ void ValveManagerInitialize::Process(ValveManager &manager)
     //initialize output pins
     for(pin = SIG_OUTPUT_START; pin <= SIG_OUTPUT_MAX; pin++)
     {
-        myDebug_P(PSTR("[ValveMgrIni] Pin %d Output!"), pin);
+        //myDebug_P(PSTR("[ValveMGR] Pin %d Output"), pin);    
         manager.mcp.pinMode(pin, OUTPUT); 
         manager.mcp.digitalWrite(pin,LOW);
     }
+    
 
     //initialize input pins
     for(pin = SIG_INPUT_START; pin <= SIG_INPUT_MAX; pin++)
     {
-        myDebug_P(PSTR("[ValveMgrIni] Pin %d input!"), pin);
+        //myDebug_P(PSTR("[ValveMGR] Pin %d Input"), pin);    
         manager.mcp.pinMode(pin,INPUT);             // Button i/p to GND
         manager.mcp.pullUp(pin,HIGH);               // Puled high ~100k
         manager.mcp.setupInterruptPin(pin,CHANGE);  // Generate interrupt on change
     }
-
-    //Setup interrupts
-    // On interrupt, polariy is set HIGH/LOW (last parameter).
+    
+    //Setup interrupts,// On interrupt, polariy is set HIGH/LOW (last parameter).
     manager.mcp.setupInterrupts(MCP_INT_MIRROR, MCP_INT_ODR, LOW); // The mcp output interrupt pin.
     manager.mcp.readGPIOAB(); // Initialise for interrupts.
-
+    
     attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), &ValveManager::handle_isr, FALLING); // Enable Arduino interrupt control.
     myDebug_P(PSTR("[ValveMGR] Initialized"));
     //go to operational state..
@@ -86,27 +85,23 @@ ValveManagerInitialize::~ValveManagerInitialize(){}
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void ValveManagerOperational::Process(ValveManager &manager)
 {
-    myDebug_P(PSTR("[ValveMgrOp] Process! %d"), manager.getLedsEnabled());
-    if(manager.getLedsEnabled())
+    Valve *pValve = manager.getValve(VALVE_LIVINGROOM);
+    switch(pValve->getValveStatus())
     {
-        manager.mcp.digitalWrite(SIG_OUT_OPEN_1, HIGH);
-        manager.mcp.digitalWrite(SIG_OUT_CLOSE_2, LOW);
-        delay(1000);
+       // case VALVE_INIT:
+       // case VALVE_CLOSED:
+        default:
+            pValve->openValve();
+            break;
     }
-    else
-    {
-        manager.mcp.digitalWrite(SIG_OUT_OPEN_1, LOW);
-        manager.mcp.digitalWrite(SIG_OUT_CLOSE_2, HIGH);
-        delay(1000);
-    }
-    manager.toggleLedsEnabled();
+    delay(1000);
 }
 
 void ValveManagerOperational::HandleIsr(ValveManager &manager)
 {
-    uint8_t p,v;
-    static uint16_t ledState=0;
-
+    int p,v;
+    //static uint16_t ledState=0;
+    myDebug("[ValveMGROp] IRQ");
     noInterrupts();
 
     // Debounce. Slow I2C: extra debounce between interrupts anyway.
@@ -120,7 +115,14 @@ void ValveManagerOperational::HandleIsr(ValveManager &manager)
     p = manager.mcp.getLastInterruptPin();
     // This one resets the interrupt state as it reads from reg INTCAPA(B).
     v = manager.mcp.getLastInterruptPinValue();
-
+    
+    Valve *pValve = manager.getValve(p, v);
+    myDebug("[ValveMGROp] No pInsInterrupt %d - %d", p, v);
+    if(pValve != NULL)
+    {
+        pValve->interruptSignaled(p);
+    }
+    /*
     // Here either the button has been pushed or released.
     if ( p==SIG_IN_CLOSE_1 && v == 1) 
     { //  Test for release - pin pulled high
@@ -136,10 +138,7 @@ void ValveManagerOperational::HandleIsr(ValveManager &manager)
 
         ledState = ! ledState;
     }
-    //else{
-        myDebug("[ValveMGR] Interrupt %d - %d", p, v);
-    //}
-
+    */
     attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), &ValveManager::handle_isr ,FALLING); // Reinstate interrupts from external pin.
 }
 
