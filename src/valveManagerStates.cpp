@@ -11,11 +11,35 @@
 //I2C -> D4 & D5?
 
 // MCP23017 setup
-#define MCP_LED1 7
-#define MCP_INPUTPIN 8
-#define MCP_INPUTPIN2 10
-#define MCP_LEDTOG1 11
-#define MCP_LEDTOG2 4
+
+typedef enum PORTS {
+    SIG_OPEN_1 = 7,
+    SIG_CLOSE_1 = 6,
+    SIG_OPEN_2 = 5,
+    SIG_CLOSE_2 = 4,
+    SIG_OPEN_3 = 3,
+    SIG_CLOSE_3 = 2,
+    SIG_OPEN_4 = 1,
+    SIG_CLOSE_4 = 0,
+    SIG_INPUT_START = SIG_CLOSE_4,
+    SIG_INPUT_MAX = SIG_OPEN_1,
+} port_input_t;
+
+typedef enum OUTPUT_PORTS {
+    SIG_IN_CLOSE_1 = 8,
+    SIG_IN_OPEN_1 = 9,
+    SIG_IN_CLOSE_2 = 10,
+    SIG_IN_OPEN_2 = 11,
+    SIG_IN_CLOSE_3 = 12,
+    SIG_IN_OPEN_3 = 13,
+    SIG_IN_CLOSE_4 = 14,
+    SIG_IN_OPEN_4 = 15,
+    
+    SIG_OUTPUT_START = SIG_IN_CLOSE_1,
+    SIG_OUTUPT_MAX = SIG_IN_OPEN_4,
+} port_output_t;
+
+
 // Register bits
 #define MCP_INT_MIRROR true  // Mirror inta to intb.
 #define MCP_INT_ODR    false // Open drain.
@@ -41,31 +65,30 @@ void AbstractState::setState(ValveManager &manager, AbstractState *state)
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void ValveManagerInitialize::Process(ValveManager &manager)
 {
-    pinMode(INTERRUPT_PIN,INPUT); //pin 3?
+    int pin = 0;
+
+    pinMode(INTERRUPT_PIN,INPUT); //pin for ESP
+    //Configure I2C
     manager.mcp.begin(I2C_ADDR, 4, 5); //PIN4 & 4 is SD
 
-    manager.mcp.pinMode(MCP_LEDTOG1, OUTPUT);  // Toggle LED 1
-    manager.mcp.pinMode(MCP_LEDTOG2, OUTPUT);  // Toggle LED 2
-    
-    manager.mcp.pinMode(MCP_LED1, OUTPUT);     // LED output
-    manager.mcp.digitalWrite(MCP_LED1,LOW);
-    
-    // This Input pin provides the interrupt source.
-    manager.mcp.pinMode(MCP_INPUTPIN,INPUT);   // Button i/p to GND
-    manager.mcp.pullUp(MCP_INPUTPIN,HIGH);     // Puled high ~100k
+    //initialize output pins
+    for(pin = SIG_OUTPUT_START; pin <= SIG_OUTPUT_START; pin++)
+    {
+        manager.mcp.pinMode(pin, OUTPUT); 
+        manager.mcp.digitalWrite(pin,LOW);
+    }
 
-    // Show a different value for interrupt capture data register = debug.
-    manager.mcp.pinMode(MCP_INPUTPIN2,INPUT);   // Button i/p to GND
-    manager.mcp.pullUp(MCP_INPUTPIN2,HIGH);     // Puled high ~100k
+    //initialize input pins
+    for(pin = SIG_INPUT_START; pin <= SIG_INPUT_MAX; pin++)
+    {
+        manager.mcp.pinMode(pin,INPUT);             // Button i/p to GND
+        manager.mcp.pullUp(pin,HIGH);               // Puled high ~100k
+        manager.mcp.setupInterruptPin(pin,CHANGE);  // Generate interrupt on change
+    }
 
+    //Setup interrupts
     // On interrupt, polariy is set HIGH/LOW (last parameter).
     manager.mcp.setupInterrupts(MCP_INT_MIRROR, MCP_INT_ODR, LOW); // The mcp output interrupt pin.
-    manager.mcp.setupInterruptPin(MCP_INPUTPIN,CHANGE); // The mcp  action that causes an interrupt.
-
-    manager.mcp.setupInterruptPin(MCP_INPUTPIN2,CHANGE); // No button connected, see effect on code=none.
-
-    manager.mcp.digitalWrite(MCP_LED1,LOW);
-
     manager.mcp.readGPIOAB(); // Initialise for interrupts.
 
     attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), &ValveManager::handle_isr, FALLING); // Enable Arduino interrupt control.
@@ -89,14 +112,14 @@ ValveManagerInitialize::~ValveManagerInitialize(){}
 void ValveManagerOperational::Process(ValveManager &manager){
     if(manager.getLedsEnabled())
     {
-        manager.mcp.digitalWrite(MCP_LEDTOG1, HIGH);
-        manager.mcp.digitalWrite(MCP_LEDTOG2, LOW);
+        manager.mcp.digitalWrite(SIG_IN_CLOSE_1, HIGH);
+        manager.mcp.digitalWrite(SIG_CLOSE_2, LOW);
         delay(1000);
     }
     else
     {
-        manager.mcp.digitalWrite(MCP_LEDTOG1, LOW);
-        manager.mcp.digitalWrite(MCP_LEDTOG2, HIGH);
+        manager.mcp.digitalWrite(SIG_IN_CLOSE_1, LOW);
+        manager.mcp.digitalWrite(SIG_CLOSE_2, HIGH);
         delay(1000);
     }
     manager.toggleLedsEnabled();
@@ -122,21 +145,21 @@ void ValveManagerOperational::HandleIsr(ValveManager &manager)
     v = manager.mcp.getLastInterruptPinValue();
 
     // Here either the button has been pushed or released.
-    if ( p==MCP_INPUTPIN && v == 1) 
+    if ( p==SIG_IN_CLOSE_1 && v == 1) 
     { //  Test for release - pin pulled high
         if ( ledState ) 
         {
-            manager.mcp.digitalWrite(MCP_LED1, LOW);
+            manager.mcp.digitalWrite(SIG_OPEN_1, LOW);
         } 
         else 
         {
-            manager.mcp.digitalWrite(MCP_LED1, HIGH);
+            manager.mcp.digitalWrite(SIG_OPEN_1, HIGH);
         }
 
         ledState = ! ledState;
     }
     else{
-        myDebug("[ValveMGR] Interrupt %d", p);
+        myDebug("[ValveMGR] Interrupt %d - %d", p, v);
     }
 
     attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), &ValveManager::handle_isr ,FALLING); // Reinstate interrupts from external pin.
