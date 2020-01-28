@@ -88,10 +88,17 @@ void ValveManagerOperational::Process(ValveManager &manager)
     Valve *pValve = manager.getValve(VALVE_LIVINGROOM);
     switch(pValve->getValveStatus())
     {
-       // case VALVE_INIT:
-       // case VALVE_CLOSED:
+        case VALVE_INIT:
+        case VALVE_OPEN:
+            //pValve->closeValve(&manager.mcp);
+            manager.mcp.digitalWrite(7,LOW);
+            manager.mcp.digitalWrite(6,HIGH);
+            break;
+        case VALVE_CLOSED:
         default:
-            pValve->openValve();
+            //pValve->openValve(&manager.mcp);
+            manager.mcp.digitalWrite(7,HIGH);
+            manager.mcp.digitalWrite(6,LOW);
             break;
     }
     delay(1000);
