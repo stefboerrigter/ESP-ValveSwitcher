@@ -54,9 +54,9 @@ void setup() {
     m_admin.myESP.setSettings(LoadSaveCallback, SetListCallback, false); // default is Serial off
     m_admin.myESP.setOTA(OTACallback_pre, OTACallback_post);             // OTA callback which is called when OTA is starting and stopping
     m_admin.myESP.begin(APP_HOSTNAME, APP_NAME, APP_VERSION, APP_URL, APP_UPDATEURL);
-  //  m_admin.service.setupServices(); //Connect all required services (web / telnet / OTA / MQTT)
+  
     m_admin.ds18Sensors = m_admin.ds18.setup(DS18_GPIO, DS18_PARASITE); // returns #sensors
-    //m_admin.valveManager.initialize();
+    m_admin.valveManager.Initialize();
 }
 
 void loop() {
