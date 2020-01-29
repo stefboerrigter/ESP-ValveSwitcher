@@ -26,7 +26,7 @@ typedef enum {
 
 class Valve{
     public:
-        Valve(const valve_struct_t *pValve_type, int out_open, int out_close, int in_open, int in_close, Adafruit_MCP23017 *pMcp);
+        Valve(const valve_struct_t *pValve_type, int out_open, int out_close, int in_open, int in_close, Adafruit_MCP23017 &pMcp);
         ~Valve();
         void openValve(Adafruit_MCP23017 *pIOExpander);
         void closeValve(Adafruit_MCP23017 *pIOExpander);
@@ -43,5 +43,5 @@ class Valve{
         int m_input_open;
         int m_input_close;
         valve_status_t m_status;
-        Adafruit_MCP23017 *pIOExpander;
+        Adafruit_MCP23017 &pIOExpander;
 };

@@ -3,11 +3,16 @@
 #include <Arduino.h>
 #include "utils.h"
 
-Valve::Valve(const valve_struct_t *pValve_type, int out_open, int out_close, int in_open, int in_close, Adafruit_MCP23017 *pMcp):
-    m_type(pValve_type->valve_type), m_name(pValve_type->valve_name), m_pin_open(out_open), m_pin_close(out_close),
-    m_input_open(in_open), m_input_close(in_close), m_status(VALVE_INIT)
+Valve::Valve(const valve_struct_t *pValve_type, int out_open, int out_close, int in_open, int in_close, Adafruit_MCP23017 &mcp):
+    m_type(pValve_type->valve_type), 
+    m_name(pValve_type->valve_name), 
+    m_pin_open(out_open), 
+    m_pin_close(out_close),
+    m_input_open(in_open), 
+    m_input_close(in_close), 
+    m_status(VALVE_INIT), 
+    pIOExpander(mcp)
 {
-    //*pIOExpander = *pMcp;
 }
 
 Valve::~Valve()
@@ -48,7 +53,7 @@ bool Valve::hasInterruptPin(int interruptPin, int value)
 
 void Valve::interruptSignaled(int pin)
 {
-
+    //pIOExpander.digitalRead(0);
     //pIOExpander->digitalWrite(m_pin_open, LOW);
     //pIOExpander->digitalWrite(m_pin_close, LOW);
     m_status = VALVE_INIT;

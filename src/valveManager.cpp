@@ -20,9 +20,9 @@ ValveManager::ValveManager() :
     m_leds_enabled = false;
     //Clear list and create valves:
     m_valves.clear();
-    m_valves.push_back(new Valve(&valve_types[VALVE_LIVINGROOM], SIG_OUT_OPEN_1, SIG_OUT_CLOSE_1, SIG_IN_OPEN_1, SIG_IN_CLOSE_1, &mcp));
-    m_valves.push_back(new Valve(&valve_types[VALVE_UPSTAIRS],   SIG_OUT_OPEN_2, SIG_OUT_CLOSE_2, SIG_IN_OPEN_2, SIG_IN_CLOSE_2, &mcp));
-    m_valves.push_back(new Valve(&valve_types[VALVE_BATHROOM],   SIG_OUT_OPEN_3, SIG_OUT_CLOSE_3, SIG_IN_OPEN_3, SIG_IN_CLOSE_3, &mcp));
+    m_valves.push_back(new Valve(&valve_types[VALVE_LIVINGROOM], SIG_OUT_OPEN_1, SIG_OUT_CLOSE_1, SIG_IN_OPEN_1, SIG_IN_CLOSE_1, mcp));
+    m_valves.push_back(new Valve(&valve_types[VALVE_UPSTAIRS],   SIG_OUT_OPEN_2, SIG_OUT_CLOSE_2, SIG_IN_OPEN_2, SIG_IN_CLOSE_2, mcp));
+    m_valves.push_back(new Valve(&valve_types[VALVE_BATHROOM],   SIG_OUT_OPEN_3, SIG_OUT_CLOSE_3, SIG_IN_OPEN_3, SIG_IN_CLOSE_3, mcp));
 }
 
 /* Destructor */

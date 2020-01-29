@@ -50,7 +50,6 @@ void ValveManagerInitialize::Process(ValveManager &manager)
         manager.mcp.pinMode(pin, OUTPUT); 
         manager.mcp.digitalWrite(pin,LOW);
     }
-    
 
     //initialize input pins
     for(pin = SIG_INPUT_START; pin <= SIG_INPUT_MAX; pin++)
@@ -68,7 +67,7 @@ void ValveManagerInitialize::Process(ValveManager &manager)
     attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), &ValveManager::handle_isr, FALLING); // Enable Arduino interrupt control.
     myDebug_P(PSTR("[ValveMGR] Initialized"));
     //go to operational state..
-    this->setState(manager, new ValveManagerOperational());
+    setState(manager, new ValveManagerOperational());
 }
 
 void ValveManagerInitialize::HandleIsr(ValveManager &manager){
@@ -85,20 +84,30 @@ ValveManagerInitialize::~ValveManagerInitialize(){}
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void ValveManagerOperational::Process(ValveManager &manager)
 {
+    static uint8_t open = 0;
     Valve *pValve = manager.getValve(VALVE_LIVINGROOM);
     switch(pValve->getValveStatus())
     {
-        case VALVE_INIT:
-        case VALVE_OPEN:
+        //case VALVE_INIT:
+        //case VALVE_OPEN:
             //pValve->closeValve(&manager.mcp);
-            manager.mcp.digitalWrite(7,LOW);
-            manager.mcp.digitalWrite(6,HIGH);
-            break;
+        //    manager.mcp.digitalWrite(7,LOW);
+        //    manager.mcp.digitalWrite(6,HIGH);
+        //    break;
         case VALVE_CLOSED:
         default:
+            if(open)
+            {
             //pValve->openValve(&manager.mcp);
-            manager.mcp.digitalWrite(7,HIGH);
-            manager.mcp.digitalWrite(6,LOW);
+                manager.mcp.digitalWrite(7,HIGH);
+                manager.mcp.digitalWrite(6,LOW);
+            }
+            else
+            {
+                manager.mcp.digitalWrite(7,LOW);
+                manager.mcp.digitalWrite(6,HIGH);
+            }
+            open = !open;
             break;
     }
     delay(1000);
