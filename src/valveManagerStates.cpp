@@ -59,19 +59,20 @@ void ValveManagerInitialize::Process(ValveManager &manager)
         manager.mcp.pullUp(pin,HIGH);               // Puled high ~100k
         manager.mcp.setupInterruptPin(pin,CHANGE);  // Generate interrupt on change
     }
+    //https://www.best-microcontroller-projects.com/mcp23017-interrupt.html
     
     //Setup interrupts,// On interrupt, polariy is set HIGH/LOW (last parameter).
     manager.mcp.setupInterrupts(MCP_INT_MIRROR, MCP_INT_ODR, LOW); // The mcp output interrupt pin.
     manager.mcp.readGPIOAB(); // Initialise for interrupts.
     
     attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), &ValveManager::handle_isr, FALLING); // Enable Arduino interrupt control.
-    myDebug_P(PSTR("[ValveMGR] Initialized"));
+    myDebug_P(PSTR("[ValveManagerInitialize] Initialized"));
     //go to operational state..
     setState(manager, new ValveManagerOperational());
 }
 
 void ValveManagerInitialize::HandleIsr(ValveManager &manager){
-
+    myDebug_P(PSTR("[ValveManagerInitialize] ISR not implemented"));
 }
 
 ValveManagerInitialize::~ValveManagerInitialize(){}
@@ -128,6 +129,7 @@ void ValveManagerOperational::HandleIsr(ValveManager &manager)
     detachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN));
 
     interrupts(); // re-start interrupts for mcp
+
     p = manager.mcp.getLastInterruptPin();
     // This one resets the interrupt state as it reads from reg INTCAPA(B).
     v = manager.mcp.getLastInterruptPinValue();
@@ -168,11 +170,11 @@ ValveManagerOperational::~ValveManagerOperational(){}
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void ValveManagerValidate::Process(ValveManager &manager){
-
+    myDebug_P(PSTR("[ValveManagerValidate] Process not implemented"));
 }
 
 void ValveManagerValidate::HandleIsr(ValveManager &manager){
-
+    myDebug_P(PSTR("[ValveManagerValidate] ISR not implemented"));
 }
 
 ValveManagerValidate::~ValveManagerValidate(){}
@@ -184,11 +186,11 @@ ValveManagerValidate::~ValveManagerValidate(){}
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void ValveManagerError::Process(ValveManager &manager){
-
+    myDebug_P(PSTR("[ValveManagerError] Process not implemented"));
 }
 
 void ValveManagerError::HandleIsr(ValveManager &manager){
-
+    myDebug_P(PSTR("[ValveManagerError] ISR not implemented"));
 }
 
 ValveManagerError::~ValveManagerError(){}
