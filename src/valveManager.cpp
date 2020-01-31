@@ -5,7 +5,7 @@
 //Own static instance pointer to handle ISR forwarding..
 ValveManager *ValveManager::pInst = NULL;
 
-static const valve_struct_t valve_types[VALVES_MAX] = 
+static const valve_struct_t valve_types[VALVE_MAX] = 
 {
     {VALVE_LIVINGROOM, "Livingroom"},
     {VALVE_UPSTAIRS, "Upstairs"},

@@ -6,7 +6,9 @@ typedef enum VALVE_TYPE{
     VALVE_LIVINGROOM = 0,
     VALVE_UPSTAIRS,
     VALVE_BATHROOM,
-    VALVES_MAX
+    VALVE_MAX,
+    VALVE_TYPE_FIRST = VALVE_LIVINGROOM,
+    VALVE_TYPE_LAST = VALVE_MAX,
 } valve_t;
 
 typedef struct VALVE_OBJECT{
@@ -28,13 +30,14 @@ class Valve{
     public:
         Valve(const valve_struct_t *pValve_type, int out_open, int out_close, int in_open, int in_close, Adafruit_MCP23017 &pMcp);
         ~Valve();
-        void openValve(Adafruit_MCP23017 *pIOExpander);
-        void closeValve(Adafruit_MCP23017 *pIOExpander);
+        void openValve();
+        void closeValve();
 
         valve_status_t getValveStatus();
         valve_t getType();
         bool hasInterruptPin(int interruptPin, int value);
-        void interruptSignaled(int pin);
+        void interruptSignaled(int pin, int value);
+        std::string valve_status_to_string(valve_status_t status);
     private:
         valve_t m_type;
         std::string m_name;
@@ -44,4 +47,5 @@ class Valve{
         int m_input_close;
         valve_status_t m_status;
         Adafruit_MCP23017 &pIOExpander;
+        
 };

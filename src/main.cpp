@@ -10,6 +10,7 @@
 #include "utils.h"
 #include "version.h"
 #include "valveManager.h"
+#include "valve.h"
 
 //DS18 temperature sensor config
 #define DS18_GPIO     D5 //default pin
@@ -296,6 +297,15 @@ void TelnetCallback(uint8_t event) {
     }
 }
 
+// used to read the next string from an input buffer and convert to an 8 bit int
+uint8_t _readIntNumber() {
+    char * numTextPtr = strtok(nullptr, ", \n");
+    if (numTextPtr == nullptr) {
+        return 0;
+    }
+    return atoi(numTextPtr);
+}
+
 // extra commands options for telnet debug window
 // wc is the word count, i.e. number of arguments. Everything is in lower case.
 void TelnetCommandCallback(uint8_t wc, const char * commandLine) {
@@ -305,6 +315,27 @@ void TelnetCommandCallback(uint8_t wc, const char * commandLine) {
 
     if (strcmp(first_cmd, "info") == 0) {
         showInfo();
+        ok = true;
+    }
+
+    if ((strcmp(first_cmd, "valve") == 0) && (wc == 3)) {
+        int valve = _readIntNumber();
+        int setting = _readIntNumber();
+        
+        Valve *pValve = m_admin.valveManager.getValve((VALVE_TYPE)valve);
+        if(pValve)
+        {
+            if(setting)
+            {
+                pValve->openValve();
+            }
+            else
+            {
+                pValve->closeValve();
+            }
+        }else{
+            myDebug_P(PSTR("Valve %d not valid"), valve);
+        }
         ok = true;
     }
 

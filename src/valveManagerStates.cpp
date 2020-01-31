@@ -85,40 +85,37 @@ ValveManagerInitialize::~ValveManagerInitialize(){}
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void ValveManagerOperational::Process(ValveManager &manager)
 {
-    static uint8_t open = 0;
-    Valve *pValve = manager.getValve(VALVE_LIVINGROOM);
-    switch(pValve->getValveStatus())
+    //keep track of active valves...
+    int iterator;
+    VALVE_TYPE type = VALVE_LIVINGROOM;
+    for(type = VALVE_TYPE_FIRST; type < VALVE_TYPE_LAST; )
     {
-        //case VALVE_INIT:
-        //case VALVE_OPEN:
-            //pValve->closeValve(&manager.mcp);
-        //    manager.mcp.digitalWrite(7,LOW);
-        //    manager.mcp.digitalWrite(6,HIGH);
-        //    break;
-        case VALVE_CLOSED:
-        default:
-            if(open)
-            {
-            //pValve->openValve(&manager.mcp);
-                manager.mcp.digitalWrite(7,HIGH);
-                manager.mcp.digitalWrite(6,LOW);
-            }
-            else
-            {
-                manager.mcp.digitalWrite(7,LOW);
-                manager.mcp.digitalWrite(6,HIGH);
-            }
-            open = !open;
-            break;
+        
+        Valve *pValve = manager.getValve(type);
+        valve_status_t status = pValve->getValveStatus();
+        switch(status)
+        {
+            case VALVE_INIT:
+                pValve->closeValve();//close on initialization
+                break;
+            case VALVE_ERROR:
+                //signal report to MQTT & Telnet
+                myDebug("[ValveMGROp] Valve Error %d", type);
+                break;
+            default:
+                //do nothing here, rest is handled on interrupt base
+                break;
+        }
+        iterator = static_cast<int>(type);
+        type = static_cast<VALVE_TYPE>(++iterator);
+        //type = static_cast<VALVE_TYPE>( static_cast<int>(type)++ );
     }
-    delay(1000);
 }
 
 void ValveManagerOperational::HandleIsr(ValveManager &manager)
 {
     int p,v;
-    //static uint16_t ledState=0;
-    myDebug("[ValveMGROp] IRQ");
+
     noInterrupts();
 
     // Debounce. Slow I2C: extra debounce between interrupts anyway.
@@ -135,28 +132,16 @@ void ValveManagerOperational::HandleIsr(ValveManager &manager)
     v = manager.mcp.getLastInterruptPinValue();
     
     Valve *pValve = manager.getValve(p, v);
-    myDebug("[ValveMGROp] No pInsInterrupt %d - %d", p, v);
+    //myDebug("[ValveMGROp] No pInsInterrupt %d - %d", p, v);
     if(pValve != NULL)
     {
-        pValve->interruptSignaled(p);
+        pValve->interruptSignaled(p, v);
     }
-    /*
-    // Here either the button has been pushed or released.
-    if ( p==SIG_IN_CLOSE_1 && v == 1) 
-    { //  Test for release - pin pulled high
-    
-        if ( ledState ) 
-        {
-            manager.mcp.digitalWrite(SIG_OUT_OPEN_3, LOW);
-        } 
-        else 
-        {
-            manager.mcp.digitalWrite(SIG_OUT_OPEN_3, HIGH);
-        }
-
-        ledState = ! ledState;
+    else
+    {
+        myDebug("[ValveMGROp] No pInsInterrupt %d - %d", p, v);
     }
-    */
+    //Re-configure interrupt
     attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), &ValveManager::handle_isr ,FALLING); // Reinstate interrupts from external pin.
 }
 
