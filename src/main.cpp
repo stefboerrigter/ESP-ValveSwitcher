@@ -30,6 +30,7 @@ void MQTTCallback(unsigned int type, const char * topic, const char * message);
 static const command_t project_cmds[] PROGMEM = {
     {true, "led <on | off>", "toggle status LED on/off"},
     {true, "led_gpio <gpio>", "set the LED pin. Default is the onboard LED 2. For external D1 use 5"},
+    {true, "valve [<valve_id> <valve_status>]", "Print all valves OR set valve ID to Status"},
     {false, "info", "show current captured on the devices"},
 
 };
@@ -248,7 +249,8 @@ bool SetListCallback(MYESP_FSACTION action, uint8_t wc, const char * setting, co
 // Show command - display stats on an 's' command
 void showInfo() {
     myDebug_P(PSTR("%sESP-Valve system stats:%s"), COLOR_BOLD_ON, COLOR_BOLD_OFF);
-    myDebug_P(PSTR("  TO BE IMPLMENTED"));
+    myDebug_P(PSTR(" Valve [<Valve ID> <Valve Action>] to control valves"));
+    //myDebug_P(PSTR(" Valve [<Valve ID> <Valve Action>] to control valves"));
 }
 
 // print settings
@@ -318,23 +320,41 @@ void TelnetCommandCallback(uint8_t wc, const char * commandLine) {
         ok = true;
     }
 
-    if ((strcmp(first_cmd, "valve") == 0) && (wc == 3)) {
-        int valve = _readIntNumber();
-        int setting = _readIntNumber();
-        
-        Valve *pValve = m_admin.valveManager.getValve((VALVE_TYPE)valve);
-        if(pValve)
+    if (strcmp(first_cmd, "valve") == 0) {
+        if(wc == 3)
         {
-            if(setting)
+            //Specific valve given with open/close command 
+            int valve = _readIntNumber();
+            int setting = _readIntNumber();
+            
+            Valve *pValve = m_admin.valveManager.getValve((VALVE_TYPE)valve);
+            if(pValve)
             {
-                pValve->openValve();
+                if(setting)
+                {
+                    pValve->openValve();
+                }
+                else
+                {
+                    pValve->closeValve();
+                }
+            }else{
+                myDebug_P(PSTR("Valve %d not valid"), valve);
             }
-            else
+        }
+        else
+        {
+            //Print all valve information:
+            VALVE_TYPE type = VALVE_LIVINGROOM;
+            int iterator;
+            myDebug_P(PSTR("Print valve info, use valve <VALVEID> <SET(0|1)> to control valve"));
+            for(type = VALVE_TYPE_FIRST; type < VALVE_TYPE_LAST; )
             {
-                pValve->closeValve();
+                Valve *pValve = m_admin.valveManager.getValve(type);
+                myDebug_P(PSTR("%d | %s"), type, pValve->toString());
+                iterator = static_cast<int>(type);
+                type = static_cast<VALVE_TYPE>(++iterator);
             }
-        }else{
-            myDebug_P(PSTR("Valve %d not valid"), valve);
         }
         ok = true;
     }

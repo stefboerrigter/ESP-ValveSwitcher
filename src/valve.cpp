@@ -2,6 +2,7 @@
 #include <Wire.h>
 #include <Arduino.h>
 #include "utils.h"
+#include <sstream>
 
 Valve::Valve(const valve_struct_t *pValve_type, int out_open, int out_close, int in_open, int in_close, Adafruit_MCP23017 &mcp):
     m_type(pValve_type->valve_type), 
@@ -135,4 +136,15 @@ void Valve::interruptSignaled(int pin, int value)
     {
         myDebug_P(PSTR("[Valve] %s Interrupt to wrong valve! %d"), m_name.c_str(), pin);
     }
+}
+
+char const *Valve::toString(void)
+{
+    std::stringstream retString;
+
+    retString << m_name << ": " << valve_status_to_string(m_status);
+    retString << " | Outputs: " << m_pin_open   << "," << m_pin_close;
+    retString << " | Inputs: "  << m_input_open << "," << m_input_close;
+
+    return retString.str().c_str();
 }

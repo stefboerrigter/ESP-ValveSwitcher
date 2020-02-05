@@ -38,6 +38,7 @@ class Valve{
         bool hasInterruptPin(int interruptPin, int value);
         void interruptSignaled(int pin, int value);
         std::string valve_status_to_string(valve_status_t status);
+        const char *toString();
     private:
         valve_t m_type;
         std::string m_name;
