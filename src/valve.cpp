@@ -6,13 +6,13 @@
 
 Valve::Valve(const valve_struct_t *pValve_type, int out_open, int out_close, int in_open, int in_close, Adafruit_MCP23017 &mcp):
     m_type(pValve_type->valve_type), 
-    m_name(pValve_type->valve_name), 
     m_pin_open(out_open), 
     m_pin_close(out_close),
     m_input_open(in_open), 
     m_input_close(in_close), 
     m_status(VALVE_INIT), 
-    pIOExpander(mcp)
+    pIOExpander(mcp),
+    m_name(pValve_type->valve_name)
 {
 }
 
@@ -143,8 +143,9 @@ char const *Valve::toString(void)
     std::stringstream retString;
 
     retString << m_name << ": " << valve_status_to_string(m_status);
-    retString << " | Outputs: " << m_pin_open   << "," << m_pin_close;
-    retString << " | Inputs: "  << m_input_open << "," << m_input_close;
+    retString << " | Outputs: " << m_pin_open << "," << m_pin_close;
+    retString << " | Inputs: "  << m_input_open << "," << m_input_close << " .";
+    retString << "           ."; //TODO: find out why last characters are overridden.
 
     return retString.str().c_str();
 }

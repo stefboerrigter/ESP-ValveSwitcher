@@ -41,12 +41,11 @@ class Valve{
         const char *toString();
     private:
         valve_t m_type;
-        std::string m_name;
         int m_pin_open;
         int m_pin_close;
         int m_input_open;
         int m_input_close;
         valve_status_t m_status;
         Adafruit_MCP23017 &pIOExpander;
-        
+        std::string m_name;
 };

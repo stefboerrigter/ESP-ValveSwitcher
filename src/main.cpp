@@ -351,7 +351,7 @@ void TelnetCommandCallback(uint8_t wc, const char * commandLine) {
             for(type = VALVE_TYPE_FIRST; type < VALVE_TYPE_LAST; )
             {
                 Valve *pValve = m_admin.valveManager.getValve(type);
-                myDebug_P(PSTR("%d | %s"), type, pValve->toString());
+                myDebug("%d | %s", type, pValve->toString());
                 iterator = static_cast<int>(type);
                 type = static_cast<VALVE_TYPE>(++iterator);
             }
