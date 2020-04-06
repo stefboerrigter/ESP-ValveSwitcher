@@ -5,6 +5,7 @@
 #include <list>
 #include <Adafruit_MCP23017.h>
 #include "valve.h"
+#include <Ticker.h>  //Ticker Library
 
 typedef enum OUTPUT_PORTS {
     SIG_OUT_OPEN_1 = 7,

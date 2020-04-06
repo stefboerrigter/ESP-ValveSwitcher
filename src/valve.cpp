@@ -33,7 +33,7 @@ void Valve::openValve()
         //no guarding for 'busy_closing'? just override:    
         myDebug_P(PSTR("[Valve] Open %s %d %d"), m_name.c_str(), m_pin_open, m_pin_close);
         pIOExpander.digitalWrite(m_pin_open, HIGH);
-        //pIOExpander.digitalWrite(m_pin_close, LOW);
+        pIOExpander.digitalWrite(m_pin_close, LOW);
         m_status = VALVE_BUSY_OPENING; 
     }
 }
@@ -50,6 +50,7 @@ void Valve::closeValve()
         myDebug_P(PSTR("[Valve] Close %s %d %d"), m_name.c_str(), m_pin_open, m_pin_close);
         pIOExpander.digitalWrite(m_pin_open, HIGH);
         //pIOExpander.digitalWrite(m_pin_close, HIGH);
+        pIOExpander.digitalWrite(m_pin_close, LOW);
         m_status = VALVE_BUSY_CLOSING;
     }
 }
@@ -82,9 +83,13 @@ std::string Valve::valve_status_to_string(valve_status_t status)
         case VALVE_BUSY_OPENING:
             retVal = "VALVE_BUSY_OPENING";
             break;        
+        case VALVE_NOT_CONNECTED:
+            retVal = "VALVE_NOT_CONNECTED";
+            break;
     }
     return retVal;
 }
+
 valve_t Valve::getType()
 {
     return m_type;
@@ -97,7 +102,6 @@ bool Valve::hasInterruptPin(int interruptPin, int value)
 
 void Valve::interruptSignaled(int pin, int value)
 {
-    //m_status = VALVE_INIT;
     myDebug_P(PSTR("[Valve] Interrupt %s %d [ %d || %d]"), m_name.c_str(), pin, value, m_status);
     
     switch(m_status)
@@ -121,43 +125,11 @@ void Valve::interruptSignaled(int pin, int value)
             myDebug_P(PSTR("[Valve] %s status %s ineterrupt! %d"), m_name.c_str(), valve_status_to_string(m_status).c_str(), pin);
             break;
     }
-    /*
-    if (pin == m_input_open || pin == m_input_close)
-    {
-        if(m_status == VALVE_BUSY_OPENING && value == 0)
-        {
-            myDebug_P(PSTR("[Valve] %s Open done"),m_name.c_str());
-            m_status = VALVE_OPEN;
-            pIOExpander.digitalWrite(m_pin_open, LOW);
-        }
-        else
-        {
-            if(m_status == VALVE_OPEN)
-            {
-                myDebug_P(PSTR("[Valve] %s Open done -> Not Done. Status not updated"), m_name.c_str());
-            }
-        }
-    }
-    else if(pin == m_input_close)
-    {
-        if(m_status == VALVE_BUSY_CLOSING && value == 0)
-        {
-            myDebug_P(PSTR("[Valve] %s Close done"),m_name.c_str());
-            m_status = VALVE_CLOSED;
-            pIOExpander.digitalWrite(m_pin_close, LOW);
-        }
-        else
-        {
-            if(m_status == VALVE_CLOSED)
-            {
-                myDebug_P(PSTR("[Valve] %s Close done -> Not Done. Status not updated!"), m_name.c_str());
-            }
-        }
-    }
-    else
-    {
-        myDebug_P(PSTR("[Valve] %s Interrupt to wrong valve! %d"), m_name.c_str(), pin);
-    }*/
+}
+
+void Valve::setValveStatus(valve_status_t status)
+{
+    this->m_status = status;
 }
 
 char const *Valve::toString(void)

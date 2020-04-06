@@ -933,6 +933,11 @@ void MyESP::_telnetCommand(char * commandLine) {
         return;
     }
 
+    if ((strcmp(ptrToCommandName, "time") == 0) && (wc == 1)) {
+        myDebug_P(PSTR(" [TIME] Time in UTC is %02d:%02d:%02d"), to_hour(now()), to_minute(now()), to_second(now()));
+        return;
+    }
+
     // show system stats
     if ((strcmp(ptrToCommandName, "quit") == 0) && (wc == 1)) {
         myDebug_P(PSTR("[TELNET] exiting telnet session"));
@@ -1253,6 +1258,8 @@ void MyESP::showSystemStats() {
 
     if (_ntp_enabled) {
         myDebug_P(PSTR(" [NTP] Time in UTC is %02d:%02d:%02d"), to_hour(now()), to_minute(now()), to_second(now()));
+    }else{
+        myDebug_P(PSTR(" [TIME] Time in UTC is %02d:%02d:%02d"), to_hour(now()), to_minute(now()), to_second(now()));
     }
 
 #ifdef CRASH

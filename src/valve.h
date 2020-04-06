@@ -23,6 +23,7 @@ typedef enum {
     VALVE_BUSY_OPENING,
     VALVE_BUSY_CLOSING,
     VALVE_ERROR,
+    VALVE_NOT_CONNECTED,
 } valve_status_t;
 
 
@@ -34,11 +35,14 @@ class Valve{
         void closeValve();
 
         valve_status_t getValveStatus();
+        void setValveStatus(valve_status_t status);
+
         valve_t getType();
         bool hasInterruptPin(int interruptPin, int value);
         void interruptSignaled(int pin, int value);
         std::string valve_status_to_string(valve_status_t status);
         const char *toString();
+
     private:
         valve_t m_type;
         int m_pin_open;

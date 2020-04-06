@@ -1,6 +1,7 @@
 #include "valveManager.h"
 #include "utils.h"
 #include <string>
+#include "ValveManagerStateInitialize.h"
 
 //Own static instance pointer to handle ISR forwarding..
 ValveManager *ValveManager::pInst = NULL;
@@ -14,7 +15,7 @@ static const valve_struct_t valve_types[VALVE_MAX] =
 
 /* Constructor */
 ValveManager::ValveManager() :
-    m_state(new ValveManagerInitialize())
+    m_state(new ValveManagerStateInitialize())
 {
     pInst = this;
     m_leds_enabled = false;
@@ -78,15 +79,4 @@ void ValveManager::handle_isr()
     }else{
         myDebug_P(PSTR("[ValveMGR] No pInstance for handling ISR!"));
     }
-}
-
-/* Demo handling functions */
-bool ValveManager::getLedsEnabled()
-{
-    return m_leds_enabled;
-}
-
-void ValveManager::toggleLedsEnabled()
-{
-    m_leds_enabled = !m_leds_enabled;
 }
