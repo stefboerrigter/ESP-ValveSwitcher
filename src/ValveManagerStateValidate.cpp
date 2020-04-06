@@ -2,7 +2,6 @@
 #include "ValveManagerStateError.h"
 #include "ValveManagerStateOperational.h"
 
-#define MAX_TIMER_INTERRUPTS 4 //40 seconds to have closed and opened all valves
 /////////////////////////////////////////////////////////////////////////////////////////////////
 //  Validate
 //
@@ -13,7 +12,6 @@
 
 ValveManagerStateValidate::ValveManagerStateValidate() :
     m_timerInitialized(false),
-    m_timerInterrupts(0),
     pManager(NULL)
 
 {
@@ -36,7 +34,7 @@ void ValveManagerStateValidate::Process(ValveManager &manager){
     {
         m_timerInitialized = true;
         this->pManager = &manager;
-        m_processTimer.attach(10, &ValveManagerStateValidate::handleTimer, this); //Timer fires every 10 seconds
+        m_processTimer.attach(30, &ValveManagerStateValidate::handleTimer, this); //Timer fires after X seconds
     }
 
     for(type = VALVE_TYPE_FIRST; type < VALVE_TYPE_LAST; )
@@ -97,46 +95,44 @@ void ValveManagerStateValidate::HandleIsr(ValveManager &manager){
 }
 
 //---------------------------------------------------------------------------------
+void ValveManagerStateValidate::onValveActionComplete(ValveManager &manager, Valve *pValve)
+{
+    switch(pValve->getValveStatus())
+    {
+        case VALVE_OPEN:
+            //valve is done initializing.
+            myDebug("[ValveMGRVal] Valve %s is open and ready", pValve->getName());
+            break;
+        case VALVE_CLOSED:
+            pValve->openValve();
+            break;
+        default: //do nothing.
+            break;
+    }
+}
+
+//---------------------------------------------------------------------------------
 void ValveManagerStateValidate::handleTimer(ValveManagerStateValidate *pMgr)
 {
     VALVE_TYPE type = VALVE_LIVINGROOM;
     int iterator = 0;
-    bool allValvesReady = true;
 
-    pMgr->m_timerInterrupts++;
-
-    //Valve *pValve = pManager->getValve(VALVE_LIVINGROOM);
     for(type = VALVE_TYPE_FIRST; type < VALVE_TYPE_LAST; )
     {
         Valve *pValve = pMgr->pManager->getValve(type);
         valve_status_t status = pValve->getValveStatus();
         switch(status)
         {
-            case VALVE_CLOSED:
-                allValvesReady = false;
-                pValve->openValve();
-                if(pMgr->m_timerInterrupts > MAX_TIMER_INTERRUPTS){
-                    pValve->setValveStatus(VALVE_NOT_CONNECTED);
-                }
-                break;
             case VALVE_OPEN:
                 //complete; leave allValvesReady on True
                 break;
             default:
-                allValvesReady = false;
-                if(pMgr->m_timerInterrupts > MAX_TIMER_INTERRUPTS){
-                    pValve->setValveStatus(VALVE_NOT_CONNECTED);
-                }
+                pValve->setValveStatus(VALVE_NOT_CONNECTED);
                 break;
         }
         
         iterator = static_cast<int>(type);
         type = static_cast<VALVE_TYPE>(++iterator);
     }
-    myDebug_P(PSTR("[ValveMGRVal] complete? %d [%d / %d]"), allValvesReady, pMgr->m_timerInterrupts, MAX_TIMER_INTERRUPTS);
-
-    if(allValvesReady || pMgr->m_timerInterrupts > MAX_TIMER_INTERRUPTS)
-    {
-        pMgr->setState(*(pMgr->pManager), new ValveManagerStateOperational());
-    }
+    pMgr->setState(*(pMgr->pManager), new ValveManagerStateOperational());
 }

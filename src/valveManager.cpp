@@ -17,13 +17,20 @@ static const valve_struct_t valve_types[VALVE_MAX] =
 ValveManager::ValveManager() :
     m_state(new ValveManagerStateInitialize())
 {
+    using namespace std::placeholders;
     pInst = this;
     m_leds_enabled = false;
     //Clear list and create valves:
     m_valves.clear();
-    m_valves.push_back(new Valve(&valve_types[VALVE_LIVINGROOM], SIG_OUT_OPEN_1, SIG_OUT_CLOSE_1, SIG_IN_OPEN_1, SIG_IN_CLOSE_1, mcp));
+    m_valves.push_back(new Valve(&valve_types[VALVE_LIVINGROOM], SIG_OUT_OPEN_1, SIG_OUT_CLOSE_1, SIG_IN_OPEN_1, SIG_IN_CLOSE_1, mcp)); 
     m_valves.push_back(new Valve(&valve_types[VALVE_UPSTAIRS],   SIG_OUT_OPEN_2, SIG_OUT_CLOSE_2, SIG_IN_OPEN_2, SIG_IN_CLOSE_2, mcp));
     m_valves.push_back(new Valve(&valve_types[VALVE_BATHROOM],   SIG_OUT_OPEN_3, SIG_OUT_CLOSE_3, SIG_IN_OPEN_3, SIG_IN_CLOSE_3, mcp));
+
+    //Add callback handler for all valves:
+    for(Valve *pValve : m_valves)
+    {
+        pValve->addOnCompleteHandler(std::bind(&ValveManager::valveCallback, this, _1));
+    }
 }
 
 /* Destructor */
@@ -79,4 +86,11 @@ void ValveManager::handle_isr()
     }else{
         myDebug_P(PSTR("[ValveMGR] No pInstance for handling ISR!"));
     }
+}
+
+int ValveManager::valveCallback (Valve *pValve)
+{
+    myDebug_P(PSTR("[ValveMGR] Callback! %d = %d"), pValve->getType(), pValve->getValveStatus());
+    m_state->onValveActionComplete(*this, pValve);
+    return 0;
 }

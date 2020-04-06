@@ -38,14 +38,22 @@ void ValveManagerStateInitialize::Process(ValveManager &manager)
     manager.mcp.readGPIOAB(); // Initialise for interrupts.
     
     attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), &ValveManager::handle_isr, FALLING); // Enable Arduino interrupt control.
-    myDebug_P(PSTR("[ValveManagerStateInitialize] Initialized"));
+    myDebug_P(PSTR("[ValveMGRInit] Initialized"));
     //go to operational state..
     setState(manager, new ValveManagerStateValidate());
 }
 
+//---------------------------------------------------------------------------------
 void ValveManagerStateInitialize::HandleIsr(ValveManager &manager){
-    myDebug_P(PSTR("[ValveManagerStateInitialize] ISR not implemented"));
+    myDebug_P(PSTR("[ValveMGRInit] ISR not implemented"));
 }
 
+//---------------------------------------------------------------------------------
+void ValveManagerStateInitialize::onValveActionComplete(ValveManager &manager, Valve *pValve)
+{
+    myDebug("[ValveMGRInit] No onValveActionComplete implemented");
+}
+
+//---------------------------------------------------------------------------------
 ValveManagerStateInitialize::~ValveManagerStateInitialize(){}
 

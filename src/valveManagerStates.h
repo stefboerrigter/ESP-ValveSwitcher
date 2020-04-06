@@ -20,12 +20,16 @@
 
 class ValveManager;
 
+class Valve;
+
 class AbstractState {
     public:
         virtual void Process(ValveManager &manager) = 0;
         virtual void HandleIsr(ValveManager &manager) = 0;
+        virtual void onValveActionComplete(ValveManager &manager, Valve *pValve) = 0;
         virtual ~AbstractState();
     protected:
         void setState(ValveManager &manager, AbstractState *state);
+
         
 };

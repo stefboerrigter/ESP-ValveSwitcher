@@ -59,5 +59,7 @@ class ValveManager {
         std::list<Valve *> m_valves;
         bool m_leds_enabled;
         AbstractState* m_state;
+        //f_action_complete pCallBack;
+        int valveCallback (Valve *pValve); 
 };
 

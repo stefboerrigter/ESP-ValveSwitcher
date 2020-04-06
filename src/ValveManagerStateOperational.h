@@ -6,4 +6,5 @@ class ValveManagerStateOperational : public AbstractState {
         virtual void Process(ValveManager &manager);
         virtual void HandleIsr(ValveManager &manager);
         virtual ~ValveManagerStateOperational();
+        virtual void onValveActionComplete(ValveManager &manager, Valve *pValve);
 };

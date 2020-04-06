@@ -3,8 +3,10 @@
 #include <Arduino.h>
 #include "utils.h"
 #include <sstream>
+#include "valveManager.h"
 
-Valve::Valve(const valve_struct_t *pValve_type, int out_open, int out_close, int in_open, int in_close, Adafruit_MCP23017 &mcp):
+Valve::Valve(const valve_struct_t *pValve_type, int out_open, int out_close, 
+            int in_open, int in_close, Adafruit_MCP23017 &mcp):
     m_type(pValve_type->valve_type), 
     m_pin_open(out_open), 
     m_pin_close(out_close),
@@ -14,6 +16,7 @@ Valve::Valve(const valve_struct_t *pValve_type, int out_open, int out_close, int
     pIOExpander(mcp),
     m_name(pValve_type->valve_name)
 {
+
 }
 
 Valve::~Valve()
@@ -110,15 +113,17 @@ void Valve::interruptSignaled(int pin, int value)
         case VALVE_BUSY_CLOSING:
             if(pin == m_input_open && value == 0)
             {
+                pIOExpander.digitalWrite(m_pin_open, LOW);
                 myDebug_P(PSTR("[Valve] %s Open done"),m_name.c_str());
                 m_status = VALVE_OPEN;
-                pIOExpander.digitalWrite(m_pin_open, LOW);
+                fActionComplete(this);
             }
             else if(pin == m_input_close && value == 0)
             {
                 pIOExpander.digitalWrite(m_pin_open, LOW);
                 myDebug_P(PSTR("[Valve] %s Close done"),m_name.c_str());
                 m_status = VALVE_CLOSED;
+                fActionComplete(this);
             }
             break;
         default:
@@ -142,4 +147,14 @@ char const *Valve::toString(void)
     retString << "           ."; //TODO: find out why last characters are overridden.
 
     return retString.str().c_str();
+}
+
+void Valve::addOnCompleteHandler(std::function<int(Valve *pValve)> callback)
+{
+    this->fActionComplete = callback;
+}
+
+const char *Valve::getName()
+{
+    return m_name.c_str();
 }

@@ -75,4 +75,11 @@ void ValveManagerStateOperational::HandleIsr(ValveManager &manager)
     attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), &ValveManager::handle_isr ,FALLING); // Reinstate interrupts from external pin.
 }
 
+//---------------------------------------------------------------------------------
+void ValveManagerStateOperational::onValveActionComplete(ValveManager &manager, Valve *pValve)
+{
+    myDebug("[ValveMGROp] No onValveActionComplete implemented");
+}
+
+//---------------------------------------------------------------------------------
 ValveManagerStateOperational::~ValveManagerStateOperational(){}
