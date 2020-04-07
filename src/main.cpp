@@ -17,6 +17,7 @@
 #define DS18_PARASITE false //default not parasite
 
 #define TOPIC_VALVE_MAIN "valves"
+#define TOPIC_VALVE_CMD  "valve_cmd_"
 
 //// Function definitions:
 bool LoadSaveCallback(MYESP_FSACTION action, JsonObject settings);
@@ -26,6 +27,7 @@ void OTACallback_post();
 void TelnetCallback(uint8_t event);
 void TelnetCommandCallback(uint8_t wc, const char * commandLine);
 void MQTTCallback(unsigned int type, const char * topic, const char * message);
+uint8_t _hasValvespecified(const char * key, const char * input);
 
 static const command_t project_cmds[] PROGMEM = {
     {true, "led <on | off>", "toggle status LED on/off"},
@@ -35,6 +37,23 @@ static const command_t project_cmds[] PROGMEM = {
 
 };
 uint8_t _project_cmds_count = ArraySize(project_cmds);
+
+typedef enum {
+    MQTT_VALVE_NOT_CONNECTED = 0,
+    MQTT_VALVE_OPEN,
+    MQTT_VALVE_CLOSE,
+} mqtt_valve_status;
+
+typedef struct {
+    mqtt_valve_status mqqt_status;
+    valve_status_t    valve_status;
+}valve_mqtt_translation;
+
+valve_mqtt_translation valve_mqtt [] = {
+    {MQTT_VALVE_NOT_CONNECTED,  VALVE_NOT_CONNECTED},
+    {MQTT_VALVE_OPEN,           VALVE_OPEN},
+    {MQTT_VALVE_CLOSE,          VALVE_CLOSED}
+};
 
 typedef struct {
     uint32_t timestamp;      // for internal timings, via millis()
@@ -250,7 +269,6 @@ bool SetListCallback(MYESP_FSACTION action, uint8_t wc, const char * setting, co
 void showInfo() {
     myDebug_P(PSTR("%sESP-Valve system stats:%s"), COLOR_BOLD_ON, COLOR_BOLD_OFF);
     myDebug_P(PSTR(" Valve [<Valve ID> <Valve Action>] to control valves"));
-    //myDebug_P(PSTR(" Valve [<Valve ID> <Valve Action>] to control valves"));
 }
 
 // print settings
@@ -315,12 +333,14 @@ void TelnetCommandCallback(uint8_t wc, const char * commandLine) {
     // get first command argument
     char * first_cmd = strtok((char *)commandLine, ", \n");
 
-    if (strcmp(first_cmd, "info") == 0) {
+    if (strcmp(first_cmd, "info") == 0) 
+    {
         showInfo();
         ok = true;
     }
 
-    if (strcmp(first_cmd, "valve") == 0) {
+    if (strcmp(first_cmd, "valve") == 0) 
+    {
         if(wc == 3)
         {
             //Specific valve given with open/close command 
@@ -338,7 +358,8 @@ void TelnetCommandCallback(uint8_t wc, const char * commandLine) {
                 {
                     pValve->closeValve();
                 }
-            }else{
+            }else
+            {
                 myDebug_P(PSTR("Valve %d not valid"), valve);
             }
         }
@@ -380,22 +401,33 @@ void OTACallback_post() {
 void MQTTCallback(unsigned int type, const char * topic, const char * message) {
     // we're connected. lets subscribe to some topics
     if (type == MQTT_CONNECT_EVENT) {
-#ifdef MQTT_EXAMPLES
         // subscribe to the 4 heating circuits for receiving setpoint temperature and modes
         char topic_s[50];
         char buffer[4];
-        for (uint8_t hc = 1; hc <= EMS_THERMOSTAT_MAXHC; hc++) {
-            strlcpy(topic_s, TOPIC_THERMOSTAT_CMD_TEMP, sizeof(topic_s));
-            strlcat(topic_s, itoa(hc, buffer, 10), sizeof(topic_s));
-            myESP.mqttSubscribe(topic_s);
-
-            strlcpy(topic_s, TOPIC_THERMOSTAT_CMD_MODE, sizeof(topic_s));
-            strlcat(topic_s, itoa(hc, buffer, 10), sizeof(topic_s));
-            myESP.mqttSubscribe(topic_s);
+        VALVE_TYPE type = VALVE_LIVINGROOM;
+        int iterator;
+        for(type = VALVE_TYPE_FIRST; type < VALVE_TYPE_LAST; )
+        {
+            Valve *pValve = m_admin.valveManager.getValve(type);
+            if(pValve)
+            {
+                strlcpy(topic_s, TOPIC_VALVE_CMD, sizeof(topic_s));
+                strlcat(topic_s, itoa(type, buffer, 10), sizeof(topic_s));
+                if(m_admin.myESP.mqttSubscribe(topic_s))
+                {
+                   myDebug_P(PSTR("[MQTT] Subscribed to topic %s."), topic_s); 
+                }
+                else
+                {
+                    myDebug_P(PSTR("[MQTT] Subscription to topic %s failed"), topic_s);
+                }
+                
+            }
+            iterator = static_cast<int>(type);
+            type = static_cast<VALVE_TYPE>(++iterator);
         }
-#endif
         // generic incoming MQTT command for valve ports.
-        myESP.mqttSubscribe(TOPIC_VALVE_MAIN);
+        m_admin.myESP.mqttSubscribe(TOPIC_VALVE_MAIN);
 
         return;
     }
@@ -419,13 +451,57 @@ void MQTTCallback(unsigned int type, const char * topic, const char * message) {
         return; // no match for generic commands
     }
 
-    // example
-    if (strcmp(topic, "BLALAT") == 0) {
+#if 0
+    if (strcmp(topic, TOPIC_VALVE_CMD) == 0) {
         //uint8_t t = atoi((char *)message);
         //Perform Action
         //publishValues(true);
+        myDebug_P(PSTR("[MQTT] Received topic %s, payload %s"), topic, message);
         return;
     }
+#endif
+    uint8_t valve;
+    // thermostat temp changes
+    valve = _hasValvespecified(TOPIC_VALVE_CMD, topic);
+    if (valve != 255) {
+        char *endptr;
+        int valveValue = strtol(message, &endptr, 10);
+        Valve *pValve = m_admin.valveManager.getValve((VALVE_TYPE)valve);
+        if(pValve)
+        {
+            switch(valveValue)
+            {
+                case MQTT_VALVE_NOT_CONNECTED:
+                    break;
+                case MQTT_VALVE_CLOSE:
+                    pValve->closeValve();
+                    break;
+                case MQTT_VALVE_OPEN:
+                    pValve->openValve();
+                    break;
+                default:
+                    break;
+            }
+        }
+        /*
+        typedef enum {
+    VALVE_INIT,
+    VALVE_OPEN,
+    VALVE_CLOSED,
+    VALVE_BUSY_OPENING,
+    VALVE_BUSY_CLOSING,
+    VALVE_ERROR,
+    VALVE_NOT_CONNECTED,
+} valve_status_t;
+*/
+
+        //ems_setThermostatTemp(f, hc);
+        myDebug_P(PSTR("[MQTT]: Valve Received new data %d [%d]"), valve, valveValue);
+        //publishValues(true); // publish back immediately
+        return;
+    }
+
+    myDebug_P(PSTR("[MQTT] Received topic %s, payload %s not handled"), topic, message);
 }
 
 
@@ -434,4 +510,30 @@ void WIFICallback() {
     // This is where we enable the UART service to scan the incoming serial Tx/Rx bus signals
     // This is done after we have a WiFi signal to avoid any resource conflicts
     // system_uart_swap();
+}
+
+// see's if a topic string is appended with an interger value
+// used to identify a heating circuit
+// returns valve number 0 - N
+// or the default (255) is no suffix can be found
+uint8_t _hasValvespecified(const char * key, const char * input) {
+    int orig_len = strlen(key); // original length of the topic we're comparing too
+
+    // check if the strings match ignoring any suffix
+    if (strncmp(input, key, orig_len) == 0) {
+        // see if we have additional chars at the end, we want none or 1
+        uint8_t diff = (strlen(input) - orig_len);
+        if (diff > 1) {
+            return 255; // invalid
+        }
+
+        if (diff == 0) {
+            return 255; // identical, use default which is 1
+        }
+
+        // return the value of the last char, 0-9
+        return input[orig_len] - '0';
+    }
+
+    return 255; // invalid
 }

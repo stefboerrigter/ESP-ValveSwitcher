@@ -348,11 +348,12 @@ void MyESP::_mqttOnMessage(char * topic, char * payload, size_t len) {
 // MQTT subscribe
 // returns false if failed
 bool MyESP::mqttSubscribe(const char * topic) {
+    
     if (mqttClient.connected() && (strlen(topic) > 0)) {
         char * topic_s = _mqttTopic(topic);
 
         uint16_t packet_id = mqttClient.subscribe(topic_s, _mqtt_qos);
-        // myDebug_P(PSTR("[MQTT] Subscribing to %s"), topic_s);
+        //myDebug_P(PSTR("[MQTT] Subscribing to %s"), topic_s);
 
         if (packet_id) {
             // add to mqtt log
@@ -362,7 +363,7 @@ bool MyESP::mqttSubscribe(const char * topic) {
             myDebug_P(PSTR("[MQTT] Error subscribing to %s, error %d"), _mqttTopic(topic), packet_id);
         }
     }
-
+    
     return false; // didn't work
 }
 
@@ -400,7 +401,7 @@ bool MyESP::mqttPublish(const char * topic, const char * payload, bool retain) {
 
 // MQTT onConnect - when a connect is established
 void MyESP::_mqttOnConnect() {
-    myDebug_P(PSTR("[MQTT] MQTT connected established"));
+    myDebug_P(PSTR("[MQTT] MQTT connection established"));
     _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
 
     _mqtt_last_connection = millis();
@@ -449,7 +450,7 @@ void MyESP::_mqtt_setup() {
         if (reason == AsyncMqttClientDisconnectReason::MQTT_NOT_AUTHORIZED) {
             myDebug_P(PSTR("[MQTT] Not authorized"));
         }
-
+        myDebug_P(PSTR("[MQTT] Disconnected :("));
         // Reset reconnection delay
         _mqtt_last_connection = millis();
         _mqtt_connecting      = false;
@@ -1369,7 +1370,7 @@ void MyESP::_heartbeatCheck(bool force = false) {
         char data[300] = {0};
         serializeJson(doc, data, sizeof(data));
 
-        // myDebugLog("Publishing hearbeat via MQTT");
+        myDebug("Publishing heaartbeat via MQTT");
 
         (void)mqttPublish(MQTT_TOPIC_HEARTBEAT, data, false); // send to MQTT with retain off
     }
