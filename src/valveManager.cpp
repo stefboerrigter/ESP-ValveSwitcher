@@ -40,9 +40,9 @@ ValveManager::~ValveManager()
 }
 
 //TODO; remove?
-void ValveManager::Initialize()
+void ValveManager::Initialize(valve_update_callback callback)
 {
-
+    f_UpdateCallback = callback;
 }
 
 /* Process Loop -> pass through to active state*/
@@ -92,5 +92,6 @@ int ValveManager::valveCallback (Valve *pValve)
 {
     myDebug_P(PSTR("[ValveMGR] Callback! %d = %d"), pValve->getType(), pValve->getValveStatus());
     m_state->onValveActionComplete(*this, pValve);
+    f_UpdateCallback(false);
     return 0;
 }

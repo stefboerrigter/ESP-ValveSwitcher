@@ -450,7 +450,6 @@ void MyESP::_mqtt_setup() {
         if (reason == AsyncMqttClientDisconnectReason::MQTT_NOT_AUTHORIZED) {
             myDebug_P(PSTR("[MQTT] Not authorized"));
         }
-        myDebug_P(PSTR("[MQTT] Disconnected :("));
         // Reset reconnection delay
         _mqtt_last_connection = millis();
         _mqtt_connecting      = false;
@@ -939,6 +938,11 @@ void MyESP::_telnetCommand(char * commandLine) {
         return;
     }
 
+    if ((strcmp(ptrToCommandName, "publish") == 0) && (wc == 1)) {
+        _mqtt_publish_callback_f(true);
+        return;
+    }
+
     // show system stats
     if ((strcmp(ptrToCommandName, "quit") == 0) && (wc == 1)) {
         myDebug_P(PSTR("[TELNET] exiting telnet session"));
@@ -1370,7 +1374,7 @@ void MyESP::_heartbeatCheck(bool force = false) {
         char data[300] = {0};
         serializeJson(doc, data, sizeof(data));
 
-        myDebug("Publishing heaartbeat via MQTT");
+        // myDebug("Publishing heartbeat via MQTT");
 
         (void)mqttPublish(MQTT_TOPIC_HEARTBEAT, data, false); // send to MQTT with retain off
     }
@@ -1493,8 +1497,9 @@ void MyESP::setWIFI(wifi_callback_f callback) {
 }
 
 // init MQTT settings
-void MyESP::setMQTT(mqtt_callback_f callback) {
+void MyESP::setMQTT(mqtt_callback_f callback, mqtt_publish_callback publishCallback) {
     _mqtt_callback_f = callback; // callback
+    _mqtt_publish_callback_f = publishCallback;
 }
 
 // builds up a topic by prefixing the base and hostname

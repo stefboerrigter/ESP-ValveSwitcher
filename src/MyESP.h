@@ -192,6 +192,7 @@ typedef struct {
 } _MQTT_Log;
 
 typedef std::function<void(unsigned int, const char *, const char *)>            mqtt_callback_f;
+typedef std::function<void(bool )>                                               mqtt_publish_callback;
 typedef std::function<void()>                                                    wifi_callback_f;
 typedef std::function<void()>                                                    ota_callback_f;
 typedef std::function<void(uint8_t, const char *)>                               telnetcommand_callback_f;
@@ -243,7 +244,7 @@ class MyESP {
     void mqttUnsubscribe(const char * topic);
     bool mqttPublish(const char * topic, const char * payload);
     bool mqttPublish(const char * topic, const char * payload, bool retain);
-    void setMQTT(mqtt_callback_f callback);
+    void setMQTT(mqtt_callback_f callback, mqtt_publish_callback callbackPublish);
 
     // OTA
     void setOTA(ota_callback_f OTACallback_pre, ota_callback_f OTACallback_post);
@@ -300,36 +301,37 @@ class MyESP {
     void _printMQTTLog();
     void _addMQTTLog(const char * topic, const char * payload, const uint8_t type);
 
-    AsyncMqttClient mqttClient; // the MQTT class
-    uint32_t        _mqtt_reconnect_delay;
-    mqtt_callback_f _mqtt_callback_f;
-    char *          _mqtt_ip;
-    char *          _mqtt_user;
-    char *          _mqtt_password;
-    uint16_t        _mqtt_port;
-    char *          _mqtt_base;
-    bool            _mqtt_enabled;
-    uint16_t        _mqtt_keepalive;
-    uint8_t         _mqtt_qos;
-    bool            _mqtt_retain;
-    char *          _mqtt_will_topic;
-    char *          _mqtt_will_online_payload;
-    char *          _mqtt_will_offline_payload;
-    uint32_t        _mqtt_last_connection;
-    bool            _mqtt_connecting;
-    bool            _mqtt_heartbeat;
+    AsyncMqttClient         mqttClient; // the MQTT class
+    uint32_t                _mqtt_reconnect_delay;
+    mqtt_callback_f         _mqtt_callback_f;
+    mqtt_publish_callback   _mqtt_publish_callback_f;
+    char *                  _mqtt_ip;
+    char *                  _mqtt_user;
+    char *                  _mqtt_password;
+    uint16_t                _mqtt_port;
+    char *                  _mqtt_base;
+    bool                    _mqtt_enabled;
+    uint16_t                _mqtt_keepalive;
+    uint8_t                 _mqtt_qos;
+    bool                    _mqtt_retain;
+    char *                  _mqtt_will_topic;
+    char *                  _mqtt_will_online_payload;
+    char *                  _mqtt_will_offline_payload;
+    uint32_t                _mqtt_last_connection;
+    bool                    _mqtt_connecting;
+    bool                    _mqtt_heartbeat;
 
-    // wifi
-    void            _wifiCallback(justwifi_messages_t code, char * parameter);
-    void            _wifi_setup();
-    wifi_callback_f _wifi_callback_f;
-    char *          _network_ssid;
-    char *          _network_password;
-    uint8_t         _network_wmode;
-    bool            _wifi_connected;
-    String          _getESPhostname();
+    // wifi     
+    void                    _wifiCallback(justwifi_messages_t code, char * parameter);
+    void                    _wifi_setup();
+    wifi_callback_f         _wifi_callback_f;
+    char *                  _network_ssid;
+    char *                  _network_password;
+    uint8_t                 _network_wmode;
+    bool                    _wifi_connected;
+    String                  _getESPhostname();
 
-    // ota
+    // ota      
     ota_callback_f _ota_pre_callback_f;
     ota_callback_f _ota_post_callback_f;
     void           _ota_setup();

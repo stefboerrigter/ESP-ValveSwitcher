@@ -11,6 +11,8 @@
 #include "version.h"
 #include "valveManager.h"
 #include "valve.h"
+#include <CRC32.h>       // https://github.com/bakercp/CRC32
+#include <ArduinoJson.h> // https://github.com/bblanchon/ArduinoJson
 
 //DS18 temperature sensor config
 #define DS18_GPIO     D5 //default pin
@@ -18,16 +20,7 @@
 
 #define TOPIC_VALVE_MAIN "valves"
 #define TOPIC_VALVE_CMD  "valve_cmd_"
-
-//// Function definitions:
-bool LoadSaveCallback(MYESP_FSACTION action, JsonObject settings);
-bool SetListCallback(MYESP_FSACTION action, uint8_t wc, const char * setting, const char * value);
-void OTACallback_pre();
-void OTACallback_post();
-void TelnetCallback(uint8_t event);
-void TelnetCommandCallback(uint8_t wc, const char * commandLine);
-void MQTTCallback(unsigned int type, const char * topic, const char * message);
-uint8_t _hasValvespecified(const char * key, const char * input);
+#define TOPIC_VALVE_DATA "valve_data"
 
 static const command_t project_cmds[] PROGMEM = {
     {true, "led <on | off>", "toggle status LED on/off"},
@@ -42,6 +35,7 @@ typedef enum {
     MQTT_VALVE_NOT_CONNECTED = 0,
     MQTT_VALVE_OPEN,
     MQTT_VALVE_CLOSE,
+    MQTT_VALVE_INVALID = 255,
 } mqtt_valve_status;
 
 typedef struct {
@@ -55,6 +49,8 @@ valve_mqtt_translation valve_mqtt [] = {
     {MQTT_VALVE_CLOSE,          VALVE_CLOSED}
 };
 
+void publishValues(bool force);
+
 typedef struct {
     uint32_t timestamp;      // for internal timings, via millis()
     uint8_t  ds18Sensors;    // count of dallas sensors
@@ -66,18 +62,30 @@ typedef struct {
 //Local administration object of struct
 Admin m_admin;
 
+//// Local Function definitions:
+bool LoadSaveCallback(MYESP_FSACTION action, JsonObject settings);
+bool SetListCallback(MYESP_FSACTION action, uint8_t wc, const char * setting, const char * value);
+void OTACallback_pre();
+void OTACallback_post();
+void TelnetCallback(uint8_t event);
+void TelnetCommandCallback(uint8_t wc, const char * commandLine);
+void MQTTCallback(unsigned int type, const char * topic, const char * message);
+uint8_t _hasValvespecified(const char * key, const char * input);
+
+mqtt_valve_status valveStatusToMqtt(valve_status_t status);
+
 
 void setup() {
     // set up myESP for Wifi, MQTT, MDNS and Telnet callbacks
     m_admin.myESP.setTelnet(TelnetCommandCallback, TelnetCallback);      // set up Telnet commands
     //m_admin.myESP.setWIFI(WIFICallback);                                 // wifi callback
-    m_admin.myESP.setMQTT(MQTTCallback);                                 // MQTT ip, username and password taken from the SPIFFS settings
+    m_admin.myESP.setMQTT(MQTTCallback, publishValues);                                 // MQTT ip, username and password taken from the SPIFFS settings
     m_admin.myESP.setSettings(LoadSaveCallback, SetListCallback, true); // default is Serial off
     m_admin.myESP.setOTA(OTACallback_pre, OTACallback_post);             // OTA callback which is called when OTA is starting and stopping
     m_admin.myESP.begin(APP_HOSTNAME, APP_NAME, APP_VERSION, APP_URL, APP_UPDATEURL);
   
     m_admin.ds18Sensors = m_admin.ds18.setup(DS18_GPIO, DS18_PARASITE); // returns #sensors
-    m_admin.valveManager.Initialize();
+    m_admin.valveManager.Initialize(publishValues);
 }
 
 void loop() {
@@ -358,7 +366,8 @@ void TelnetCommandCallback(uint8_t wc, const char * commandLine) {
                 {
                     pValve->closeValve();
                 }
-            }else
+            }
+            else
             {
                 myDebug_P(PSTR("Valve %d not valid"), valve);
             }
@@ -472,32 +481,35 @@ void MQTTCallback(unsigned int type, const char * topic, const char * message) {
             switch(valveValue)
             {
                 case MQTT_VALVE_NOT_CONNECTED:
+                    myDebug("Trying to NOT connect valve? ");
                     break;
                 case MQTT_VALVE_CLOSE:
-                    pValve->closeValve();
+                    if(pValve->getValveStatus() != VALVE_NOT_CONNECTED)
+                    {
+                        pValve->closeValve();
+                    }
+                    else
+                    {
+                        myDebug("Trying to close valve which isn't connected");
+                    }
+                    
                     break;
                 case MQTT_VALVE_OPEN:
-                    pValve->openValve();
+                    if(pValve->getValveStatus() != VALVE_NOT_CONNECTED)
+                    {
+                        pValve->openValve();
+                    }
+                    else
+                    {
+                        myDebug("Trying to open valve which isn't connected");
+                    }
                     break;
                 default:
                     break;
             }
         }
-        /*
-        typedef enum {
-    VALVE_INIT,
-    VALVE_OPEN,
-    VALVE_CLOSED,
-    VALVE_BUSY_OPENING,
-    VALVE_BUSY_CLOSING,
-    VALVE_ERROR,
-    VALVE_NOT_CONNECTED,
-} valve_status_t;
-*/
-
-        //ems_setThermostatTemp(f, hc);
-        myDebug_P(PSTR("[MQTT]: Valve Received new data %d [%d]"), valve, valveValue);
-        //publishValues(true); // publish back immediately
+        //myDebug_P(PSTR("[MQTT]: Valve Received new data %d [%d]"), valve, valveValue);
+        //publishValues(false); // publish back immediately
         return;
     }
 
@@ -536,4 +548,78 @@ uint8_t _hasValvespecified(const char * key, const char * input) {
     }
 
     return 255; // invalid
+}
+
+
+// send values via MQTT
+// a json object is created for the boiler and one for the thermostat
+// CRC check is done to see if there are changes in the values since the last send to avoid too much wifi traffic
+// a check is done against the previous values and if there are changes only then they are published. Unless force=true
+void publishValues(bool force) {
+    // don't send if MQTT is not connected
+    if (!m_admin.myESP.isMQTTConnected()) {
+        return;
+    }
+
+    //char                                      s[20] = {0}; // for formatting strings
+    StaticJsonDocument<MQTT_MAX_PAYLOAD_SIZE> doc;
+    char                                      data[MQTT_MAX_PAYLOAD_SIZE] = {0};
+    CRC32                                     crc;
+    uint32_t                                  fchecksum;
+    uint8_t                                   jsonSize;
+
+    VALVE_TYPE                                type = VALVE_LIVINGROOM;
+    int                                       iterator;
+
+    static uint32_t                           previousValvePublishCRC = 0;
+
+    JsonObject rootObject = doc.to<JsonObject>();
+
+    //rootObject["Valves"] = "testings";
+    
+    for(type = VALVE_TYPE_FIRST; type < VALVE_TYPE_LAST; )
+    {
+        Valve *pValve = m_admin.valveManager.getValve(type);
+        JsonObject valveData = rootObject.createNestedObject(pValve->getName());
+        valveData["status"] = (uint8_t)valveStatusToMqtt(pValve->getValveStatus());
+        iterator = static_cast<int>(type);
+        type = static_cast<VALVE_TYPE>(++iterator);
+    }
+
+    serializeJson(doc, data, sizeof(data));
+    // check for empty json
+    jsonSize = measureJson(doc);
+    if (jsonSize > 2) {
+        // calculate hash and send values if something has changed, to save unnecessary wifi traffic
+        for (uint8_t i = 0; i < (jsonSize - 1); i++) {
+            crc.update(data[i]);
+        }
+        fchecksum = crc.finalize();
+        if ((previousValvePublishCRC != fchecksum) || force) {
+            previousValvePublishCRC = fchecksum;
+            myDebug("Publishing valve data via MQTT [%s]", data);
+
+            // send values via MQTT
+            m_admin.myESP.mqttPublish(TOPIC_VALVE_DATA, data);
+        }
+        else
+        {
+            myDebug("Publishing valve data via MQTT skipped");
+        }
+        
+    }
+}
+
+
+mqtt_valve_status valveStatusToMqtt(valve_status_t status)
+{
+    uint8_t i = 0;
+    for(i = 0; i < (sizeof(valve_mqtt) / sizeof(valve_mqtt[0])); i++)
+    {
+        if(valve_mqtt[i].valve_status == status)
+        {
+            return valve_mqtt[i].mqqt_status;
+        }
+    }
+    return MQTT_VALVE_INVALID;
 }

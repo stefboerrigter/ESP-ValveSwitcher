@@ -7,6 +7,8 @@
 #include "valve.h"
 #include <Ticker.h>  //Ticker Library
 
+typedef std::function<void(bool )>                                               valve_update_callback;
+
 typedef enum OUTPUT_PORTS {
     SIG_OUT_OPEN_1 = 7,
     SIG_OUT_CLOSE_1 = 6,
@@ -42,7 +44,7 @@ class ValveManager {
         ValveManager();
         ~ValveManager();
         void Process();
-        void Initialize();
+        void Initialize(valve_update_callback callback);
         
         bool getLedsEnabled();
         void toggleLedsEnabled();
@@ -61,5 +63,6 @@ class ValveManager {
         AbstractState* m_state;
         //f_action_complete pCallBack;
         int valveCallback (Valve *pValve); 
+        valve_update_callback f_UpdateCallback;
 };
 
