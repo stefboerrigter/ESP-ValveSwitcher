@@ -2,6 +2,7 @@
 
 class ValveManagerStateError : public AbstractState {
     public:
+        ValveManagerStateError(ValveManager &manager);
         virtual ~ValveManagerStateError();
         virtual void Process(ValveManager &manager);
         virtual void HandleIsr(ValveManager &manager);

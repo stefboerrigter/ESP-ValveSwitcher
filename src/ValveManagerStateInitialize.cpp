@@ -7,6 +7,12 @@
 //  Responsible for initializing the MCP, open Communication and set to a default initialize state
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
+ValveManagerStateInitialize::ValveManagerStateInitialize(ValveManager &manager)
+{
+    //myDebug("[ValveMGRInit] Entered Initialization state");
+}
+
+//---------------------------------------------------------------------------------
 void ValveManagerStateInitialize::Process(ValveManager &manager)
 {
     int pin = 0;
@@ -40,20 +46,24 @@ void ValveManagerStateInitialize::Process(ValveManager &manager)
     attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), &ValveManager::handle_isr, FALLING); // Enable Arduino interrupt control.
     myDebug_P(PSTR("[ValveMGRInit] Initialized"));
     //go to operational state..
-    setState(manager, new ValveManagerStateValidate());
+    setState(manager, new ValveManagerStateValidate(manager));
 }
 
 //---------------------------------------------------------------------------------
-void ValveManagerStateInitialize::HandleIsr(ValveManager &manager){
-    myDebug_P(PSTR("[ValveMGRInit] ISR not implemented"));
+void ValveManagerStateInitialize::HandleIsr(ValveManager &manager)
+{
+    //myDebug_P(PSTR("[ValveMGRInit] ISR not implemented"));
 }
 
 //---------------------------------------------------------------------------------
 void ValveManagerStateInitialize::onValveActionComplete(ValveManager &manager, Valve *pValve)
 {
-    myDebug("[ValveMGRInit] No onValveActionComplete implemented");
+    //myDebug("[ValveMGRInit] No onValveActionComplete implemented");
 }
 
 //---------------------------------------------------------------------------------
-ValveManagerStateInitialize::~ValveManagerStateInitialize(){}
+ValveManagerStateInitialize::~ValveManagerStateInitialize()
+{
+    myDebug("[ValveMGRInit] Leave Initialization state");
+}
 

@@ -1,15 +1,19 @@
 #include "ValveManagerStateOperational.h"
 #include "ValveManagerStateError.h"
+#include "ValveManagerStateValidate.h"
 
+#define SWITCH_TO_VALIDATION_TIME_IN_SEC (86400-VALIDATION_LOOP_DURATION) // 24 (hours) *60 (minutes) * 60 (seconds ) - 30 seconds for validation duration
 /////////////////////////////////////////////////////////////////////////////////////////////////
 //  Operational
 //
 //  Responsible for operating the valves as designed..
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
-ValveManagerStateOperational::ValveManagerStateOperational()
+ValveManagerStateOperational::ValveManagerStateOperational(ValveManager &manager):
+    pManager(&manager)
 {
     myDebug("[ValveMGROp] Entered Operational State");
+    m_processTimer.attach(SWITCH_TO_VALIDATION_TIME_IN_SEC, &ValveManagerStateOperational::handleTimer, this); //Timer fires after X seconds
 }
 
 //---------------------------------------------------------------------------------
@@ -31,7 +35,7 @@ void ValveManagerStateOperational::Process(ValveManager &manager)
             case VALVE_ERROR:
                 //signal report to MQTT & Telnet
                 myDebug("[ValveMGROp] Valve Error %d", type);
-                setState(manager, new ValveManagerStateError());
+                setState(manager, new ValveManagerStateError(manager));
                 break;
             default:
                 //do nothing here
@@ -42,6 +46,7 @@ void ValveManagerStateOperational::Process(ValveManager &manager)
     }
 }
 
+//---------------------------------------------------------------------------------
 void ValveManagerStateOperational::HandleIsr(ValveManager &manager)
 {
     int p,v;
@@ -82,4 +87,15 @@ void ValveManagerStateOperational::onValveActionComplete(ValveManager &manager, 
 }
 
 //---------------------------------------------------------------------------------
-ValveManagerStateOperational::~ValveManagerStateOperational(){}
+ValveManagerStateOperational::~ValveManagerStateOperational()
+{
+    m_processTimer.detach();
+    myDebug_P(PSTR("[ValveMGROp] Leave Operational state"));
+}
+
+//---------------------------------------------------------------------------------
+void ValveManagerStateOperational::handleTimer(ValveManagerStateOperational *pManager)
+{
+    //If timer elapses for operational state; we do a validate state switch.
+    pManager->setState(*(pManager->pManager), new ValveManagerStateValidate(*(pManager->pManager)));
+}

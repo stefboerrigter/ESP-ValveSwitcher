@@ -4,6 +4,10 @@ AbstractState::~AbstractState(){
 
 }
 
+AbstractState::AbstractState() {
+    
+}
+
 void AbstractState::setState(ValveManager &manager, AbstractState *state)
 {
     AbstractState *aux = manager.m_state;

@@ -67,7 +67,7 @@ MyESP::MyESP() {
     _mqtt_reconnect_delay      = MQTT_RECONNECT_DELAY_MIN;
     _mqtt_last_connection      = 0;
     _mqtt_connecting           = false;
-    _mqtt_enabled              = false;
+    _mqtt_enabled              = true;
     _mqtt_heartbeat            = false;
     _mqtt_keepalive            = MQTT_KEEPALIVE;
     _mqtt_qos                  = MQTT_QOS;

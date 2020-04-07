@@ -1,8 +1,10 @@
 #include "valveManagerStates.h"
 
+#define VALIDATION_LOOP_DURATION (30)
+
 class ValveManagerStateValidate : public AbstractState {
     public:
-        ValveManagerStateValidate();
+        ValveManagerStateValidate(ValveManager &manager);
         virtual void Process(ValveManager &manager);
         virtual void HandleIsr(ValveManager &manager);
         virtual ~ValveManagerStateValidate();
@@ -10,6 +12,5 @@ class ValveManagerStateValidate : public AbstractState {
     private: 
         Ticker m_processTimer;
         static void ICACHE_RAM_ATTR handleTimer( ValveManagerStateValidate *pManager);
-        bool m_timerInitialized;
         ValveManager *pManager;
 };

@@ -15,7 +15,7 @@ static const valve_struct_t valve_types[VALVE_MAX] =
 
 /* Constructor */
 ValveManager::ValveManager() :
-    m_state(new ValveManagerStateInitialize())
+    m_state(new ValveManagerStateInitialize(*this))
 {
     using namespace std::placeholders;
     pInst = this;

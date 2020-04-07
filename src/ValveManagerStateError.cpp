@@ -6,6 +6,12 @@
 //  Responsible for handling ERROR state of valves
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
+ValveManagerStateError::ValveManagerStateError(ValveManager &manager)
+{
+   myDebug("[ValveMGRError] Entered Error state");
+}
+
+//---------------------------------------------------------------------------------
 void ValveManagerStateError::Process(ValveManager &manager){
     myDebug_P(PSTR("[ValveMGRError] Process not implemented"));
 }
@@ -22,4 +28,7 @@ void ValveManagerStateError::onValveActionComplete(ValveManager &manager, Valve 
 }
 
 //---------------------------------------------------------------------------------
-ValveManagerStateError::~ValveManagerStateError(){}
+ValveManagerStateError::~ValveManagerStateError()
+{
+    //myDebug("[ValveMGRError] Leave Error state");
+}

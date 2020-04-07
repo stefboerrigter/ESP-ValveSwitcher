@@ -53,7 +53,7 @@ void setup() {
     m_admin.myESP.setTelnet(TelnetCommandCallback, TelnetCallback);      // set up Telnet commands
     //m_admin.myESP.setWIFI(WIFICallback);                                 // wifi callback
     m_admin.myESP.setMQTT(MQTTCallback);                                 // MQTT ip, username and password taken from the SPIFFS settings
-    m_admin.myESP.setSettings(LoadSaveCallback, SetListCallback, false); // default is Serial off
+    m_admin.myESP.setSettings(LoadSaveCallback, SetListCallback, true); // default is Serial off
     m_admin.myESP.setOTA(OTACallback_pre, OTACallback_post);             // OTA callback which is called when OTA is starting and stopping
     m_admin.myESP.begin(APP_HOSTNAME, APP_NAME, APP_VERSION, APP_URL, APP_UPDATEURL);
   

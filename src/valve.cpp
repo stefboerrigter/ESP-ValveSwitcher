@@ -127,7 +127,7 @@ void Valve::interruptSignaled(int pin, int value)
             }
             break;
         default:
-            myDebug_P(PSTR("[Valve] %s status %s ineterrupt! %d"), m_name.c_str(), valve_status_to_string(m_status).c_str(), pin);
+            myDebug_P(PSTR("[Valve] %s status %s interrupt! %d"), m_name.c_str(), valve_status_to_string(m_status).c_str(), pin);
             break;
     }
 }

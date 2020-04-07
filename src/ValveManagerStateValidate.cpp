@@ -10,17 +10,29 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-ValveManagerStateValidate::ValveManagerStateValidate() :
-    m_timerInitialized(false),
-    pManager(NULL)
+ValveManagerStateValidate::ValveManagerStateValidate(ValveManager &manager) :
+    pManager(&manager)
 
 {
-    myDebug_P(PSTR("[ValveMGRVal] Validation thread constructor"));
+    myDebug_P(PSTR("[ValveMGRVal] Entered Validation state"));
+    int iterator = 0;
+    VALVE_TYPE type = VALVE_LIVINGROOM;
+
+    //(Re) initialize all valves
+    for(type = VALVE_TYPE_FIRST; type < VALVE_TYPE_LAST; )
+    {
+        Valve *pValve = manager.getValve(type);
+        pValve->setValveStatus(VALVE_INIT);
+        iterator = static_cast<int>(type);
+        type = static_cast<VALVE_TYPE>(++iterator);
+    }
+
+    m_processTimer.attach(VALIDATION_LOOP_DURATION, &ValveManagerStateValidate::handleTimer, this); //Timer fires after X seconds
 }
 
 //---------------------------------------------------------------------------------
 ValveManagerStateValidate::~ValveManagerStateValidate(){
-    myDebug_P(PSTR("[ValveMGRVal] Validation thread destructor"));
+    myDebug_P(PSTR("[ValveMGRVal] Leaving Validation state"));
     m_processTimer.detach();
 }
 
@@ -29,13 +41,6 @@ void ValveManagerStateValidate::Process(ValveManager &manager){
     //keep track of active valves during validation..
     int iterator = 0;
     VALVE_TYPE type = VALVE_LIVINGROOM;
-
-    if(!m_timerInitialized)
-    {
-        m_timerInitialized = true;
-        this->pManager = &manager;
-        m_processTimer.attach(30, &ValveManagerStateValidate::handleTimer, this); //Timer fires after X seconds
-    }
 
     for(type = VALVE_TYPE_FIRST; type < VALVE_TYPE_LAST; )
     {
@@ -50,7 +55,7 @@ void ValveManagerStateValidate::Process(ValveManager &manager){
             case VALVE_ERROR:
                 //signal report to MQTT & Telnet
                 myDebug("[ValveMGRVal] Valve Error %d", type);
-                setState(manager, new ValveManagerStateError());
+                setState(manager, new ValveManagerStateError(manager));
                 break;
             default:
                 //do nothing here
@@ -112,6 +117,7 @@ void ValveManagerStateValidate::onValveActionComplete(ValveManager &manager, Val
 }
 
 //---------------------------------------------------------------------------------
+//If a valve is not in status open after the timer expired, it is not functional / not connected!
 void ValveManagerStateValidate::handleTimer(ValveManagerStateValidate *pMgr)
 {
     VALVE_TYPE type = VALVE_LIVINGROOM;
@@ -134,5 +140,5 @@ void ValveManagerStateValidate::handleTimer(ValveManagerStateValidate *pMgr)
         iterator = static_cast<int>(type);
         type = static_cast<VALVE_TYPE>(++iterator);
     }
-    pMgr->setState(*(pMgr->pManager), new ValveManagerStateOperational());
+    pMgr->setState(*(pMgr->pManager), new ValveManagerStateOperational(*(pMgr->pManager)));
 }

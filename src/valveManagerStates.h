@@ -28,6 +28,7 @@ class AbstractState {
         virtual void HandleIsr(ValveManager &manager) = 0;
         virtual void onValveActionComplete(ValveManager &manager, Valve *pValve) = 0;
         virtual ~AbstractState();
+        AbstractState();
     protected:
         void setState(ValveManager &manager, AbstractState *state);
 
